@@ -9,58 +9,29 @@
 <body>
     <main class="container">
         <nav>
-            <ul>
-                <li><strong>Habit Tracker</strong></li>
-            </ul>
-            <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/explore">Explore</a></li>
-                <li><a href="/friends" role="button">Friends</a></li>
-                <li><a href="/account">My Account</a></li>
-                <li>
-                    <details role="list" dir="rtl">
-                        <summary aria-haspopup="listbox" role="button">
-                            <span>🔔 Notification Panel</span>
-                            <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'"></span>
-                        </summary>
-                        <ul role="listbox">
-                            <li th:if="${#lists.isEmpty(unreadNotifications)}"><a>No new notifications</a></li>
-                            <li th:each="notification : ${unreadNotifications}">
-                                <a th:href="${notification.link}" th:text="${notification.message}"></a>
-                            </li>
-                        </ul>
-                    </details>
-                </li>
-            </ul>
-        </nav>
+            </nav>
 
         <h1>My Friends</h1>
+        <div th:if="${success}" style="color: green; margin-bottom: 1rem;" th:text="${success}"></div>
 
         <article th:if="${!pendingRequests.isEmpty()}">
-            <h2>Incoming Requests</h2>
-            <div th:each="request : ${pendingRequests}">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <span th:text="${request.user.username}"></span>
-                    <div>
-                        <form th:action="@{/friends/accept}" method="post" style="display: inline-block;">
-                            <input type="hidden" name="requestId" th:value="${request.id}" />
-                            <button type="submit">Accept</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </article>
+            </article>
         
         <h2>Your Friends List</h2>
         <div th:if="${friends.isEmpty()}">
             <p>You haven't added any friends yet. Use the <a href="/explore">Explore</a> page to find people!</p>
         </div>
-        <ul th:unless="${friends.isEmpty()}">
-            <li th:each="friend : ${friends}" th:text="${friend.username}"></li>
-        </ul>
-        <form class="logout-form" th:action="@{/logout}" method="post">
-            <button type="submit" class="secondary">Logout</button>
-        </form>
+        <article th:unless="${friends.isEmpty()}">
+            <div th:each="friend : ${friends}" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <strong th:text="${friend.username}">Friend Name</strong><br>
+                    <small th:text="'Daily Streak: ' + ${friend.dailyStreak} + ' 🔥'"></small>
+                </div>
+                <form th:action="@{/friends/{friendId}/nudge(friendId=${friend.uniqueUserId})}" method="post">
+                    <button type="submit" class="secondary">Nudge</button>
+                </form>
+            </div>
+        </article>
     </main>
 </body>
 </html>

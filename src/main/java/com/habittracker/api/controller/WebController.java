@@ -19,14 +19,22 @@ import java.util.stream.Collectors;
 @Controller
 public class WebController {
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private HabitRepository habitRepository;
-    @Autowired private HabitLogRepository habitLogRepository;
-    @Autowired private FriendshipRepository friendshipRepository;
-    @Autowired private NotificationRepository notificationRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private HabitService habitService;
-    @Autowired private NotificationService notificationService;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private HabitRepository habitRepository;
+    @Autowired
+    private HabitLogRepository habitLogRepository;
+    @Autowired
+    private FriendshipRepository friendshipRepository;
+    @Autowired
+    private NotificationRepository notificationRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private HabitService habitService;
+    @Autowired
+    private NotificationService notificationService;
 
     @ModelAttribute
     public void addGlobalAttributes(Model model, Principal principal) {
@@ -37,8 +45,15 @@ public class WebController {
         }
     }
 
-    @GetMapping("/") public String home() { return "index"; }
-    @GetMapping("/login") public String loginPage() { return "login"; }
+    @GetMapping("/")
+    public String home() {
+        return "index";
+    }
+
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
+    }
 
     @GetMapping("/register")
     public String registerPage(Model model) {
@@ -82,7 +97,7 @@ public class WebController {
         habitRepository.save(newHabit);
         return "redirect:/dashboard";
     }
-    
+
     @PostMapping("/habits/{habitId}/log")
     public String logHabitCompletion(@PathVariable Long habitId, Principal principal) {
         User user = getCurrentUser(principal);
@@ -100,20 +115,38 @@ public class WebController {
         model.addAttribute("user", getCurrentUser(principal));
         return "account";
     }
-    
+
     @GetMapping("/friends")
     public String friendsPage(Model model, Principal principal) {
         User currentUser = getCurrentUser(principal);
-        
+
         List<Friendship> pendingRequests = friendshipRepository.findByFriendAndStatus(currentUser, Friendship.FriendshipStatus.PENDING);
-        
-        List<User> friends = friendshipRepository.findAcceptedFriendships(currentUser).stream()
+
+        List<FriendDTO> friends = friendshipRepository.findAcceptedFriendships(currentUser).stream()
             .map(f -> f.getUser().equals(currentUser) ? f.getFriend() : f.getUser())
+            .map(friend -> new FriendDTO(
+                friend.getUsername(),
+                friend.getUniqueUserId(),
+                habitService.calculateDailyStreak(friend.getId())
+            ))
             .collect(Collectors.toList());
 
         model.addAttribute("pendingRequests", pendingRequests);
         model.addAttribute("friends", friends);
         return "friends";
+    }
+
+    @PostMapping("/friends/{friendId}/nudge")
+    public String nudgeFriend(@PathVariable String friendId, Principal principal, RedirectAttributes redirectAttributes) {
+        User currentUser = getCurrentUser(principal);
+        User friendToNudge = userRepository.findByUniqueUserId(friendId).orElse(null);
+
+        if (friendToNudge != null) {
+            notificationService.createNotification(friendToNudge, currentUser.getUsername() + " nudged you to complete a habit!", "/dashboard");
+            redirectAttributes.addFlashAttribute("success", "Nudge sent!");
+        }
+
+        return "redirect:/friends";
     }
 
     @GetMapping("/explore")
@@ -123,10 +156,10 @@ public class WebController {
 
         if (query != null && !query.trim().isEmpty()) {
             List<User> users = userRepository.findByUsernameOrUniqueUserId(query, query);
-            
+
             for (User user : users) {
                 if (user.getId().equals(currentUser.getId())) continue;
-                
+
                 Optional<Friendship> friendshipOpt = friendshipRepository.findFriendshipBetweenUsers(currentUser, user);
                 if (friendshipOpt.isPresent()) {
                     Friendship friendship = friendshipOpt.get();
@@ -141,7 +174,7 @@ public class WebController {
             }
             model.addAttribute("users", users);
         }
-        
+
         model.addAttribute("friendStatus", friendStatus);
         return "explore";
     }
@@ -149,20 +182,20 @@ public class WebController {
     @PostMapping("/friends/request")
     public String sendFriendRequest(@RequestParam("friendId") String friendId, Principal principal, RedirectAttributes redirectAttributes) {
         User currentUser = getCurrentUser(principal);
-        User friendToAdd = userRepository.findByUniqueUserId(friendId).orElse(null);
+        User friendToNudge = userRepository.findByUniqueUserId(friendId).orElse(null);
 
-        if (friendToAdd == null || currentUser.getId().equals(friendToAdd.getId()) || friendshipRepository.findFriendshipBetweenUsers(currentUser, friendToAdd).isPresent()) {
+        if (friendToNudge == null || currentUser.getId().equals(friendToNudge.getId()) || friendshipRepository.findFriendshipBetweenUsers(currentUser, friendToNudge).isPresent()) {
             redirectAttributes.addFlashAttribute("error", "Invalid request or already friends/pending.");
             return "redirect:/explore";
         }
 
         Friendship friendship = new Friendship();
         friendship.setUser(currentUser);
-        friendship.setFriend(friendToAdd);
+        friendship.setFriend(friendToNudge);
         friendship.setStatus(Friendship.FriendshipStatus.PENDING);
         friendshipRepository.save(friendship);
 
-        notificationService.createNotification(friendToAdd, currentUser.getUsername() + " sent you a friend request.", "/friends");
+        notificationService.createNotification(friendToNudge, currentUser.getUsername() + " sent you a friend request.", "/friends");
 
         return "redirect:/explore?query=" + friendId;
     }
