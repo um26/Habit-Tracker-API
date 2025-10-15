@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Explore</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style> body { padding-top: 70px; } nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); } </style>
+</head>
+<body>
+    <main class="container">
+        <nav>
+            <ul>
+                <li><strong>Habit Tracker</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/explore" role="button">Explore</a></li>
+                <li><a href="/friends">Friends</a></li>
+                <li><a href="/account">My Account</a></li>
+                <li>
+                    <details role="list" dir="rtl">
+                        <summary aria-haspopup="listbox" role="button">
+                            <span>🔔 Notification Panel</span>
+                            <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'"></span>
+                        </summary>
+                        <ul role="listbox">
+                            <li th:if="${#lists.isEmpty(unreadNotifications)}"><a>No new notifications</a></li>
+                            <li th:each="notification : ${unreadNotifications}">
+                                <a th:href="${notification.link}" th:text="${notification.message}"></a>
+                            </li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+
+        <h1>Find People</h1>
+        <form th:action="@{/explore}" method="get">
+            <input type="text" name="query" placeholder="Search by username or unique ID..." required>
+            <button type="submit">Search</button>
+        </form>
+
+        <div th:if="${error}" style="color: red; margin-top: 1rem;" th:text="${error}"></div>
+
+        <div th:if="${users}">
+            <h2>Search Results</h2>
+            <div th:if="${users.isEmpty()}">
+                <p>No users found matching your query.</p>
+            </div>
+            <article th:unless="${users.isEmpty()}">
+                <div th:each="user : ${users}" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <span th:text="${user.username}">User</span>
+                    
+                    <div th:switch="${friendStatus.get(user.uniqueUserId)}">
+                        <form th:case="'NOT_FRIENDS'" th:action="@{/friends/request}" method="post">
+                            <input type="hidden" name="friendId" th:value="${user.uniqueUserId}" />
+                            <button type="submit">Send Request</button>
+                        </form>
+                        <span th:case="'PENDING'">Request Sent</span>
+                        <span th:case="'FRIENDS'">Friends</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit" class="secondary">Logout</button>
+        </form>
+    </main>
+</body>
+</html>

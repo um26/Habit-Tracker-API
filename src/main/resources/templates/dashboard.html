@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style> body { padding-top: 70px; } nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); } </style>
+</head>
+<body>
+    <main class="container">
+        <nav>
+            <ul>
+                <li><strong>Habit Tracker</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/dashboard" role="button">Dashboard</a></li>
+                <li><a href="/explore">Explore</a></li>
+                <li><a href="/friends">Friends</a></li>
+                <li><a href="/account">My Account</a></li>
+                <li>
+                    <details role="list" dir="rtl">
+                        <summary aria-haspopup="listbox" role="button">
+                            <span>🔔 Notification Panel</span>
+                            <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'"></span>
+                        </summary>
+                        <ul role="listbox">
+                            <li th:if="${#lists.isEmpty(unreadNotifications)}"><a>No new notifications</a></li>
+                            <li th:each="notification : ${unreadNotifications}">
+                                <a th:href="${notification.link}" th:text="${notification.message}"></a>
+                            </li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+
+        <article style="text-align: center; margin-bottom: 2rem;">
+            <h3>Your Daily Streak</h3>
+            <h1 style="margin: 0;" th:text="${dailyStreak} + ' Days 🔥'">0 Days 🔥</h1>
+            <small>Complete at least one habit every day to keep it going!</small>
+        </article>
+
+        <h1>Your Dashboard</h1>
+        
+        <article class="add-habit-form">
+            <h2>Add a New Habit</h2>
+            <form th:action="@{/habits}" th:object="${newHabit}" method="post">
+                <input type="text" th:field="*{name}" placeholder="Habit name (e.g., Read for 15 mins)" required>
+                <input type="text" th:field="*{description}" placeholder="Description (optional)">
+                <button type="submit">Add Habit</button>
+            </form>
+        </article>
+        
+        <h2>My Habits</h2>
+        <div th:if="${#lists.isEmpty(habits)}">
+            <p>You haven't added any habits yet. Add one above to get started!</p>
+        </div>
+        
+        <div th:unless="${#lists.isEmpty(habits)}">
+            <div th:each="habit : ${habits}" class="habit-item">
+                <article>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong th:text="${habit.name}">Habit Name</strong>
+                            <p th:text="${habit.description}" style="margin: 5px 0 0 0; color: var(--muted-color);">Description</p>
+                        </div>
+                        <div>
+                            <span th:text="'Streak: ' + ${streaks.get(habit.id)} + ' 🔥'" style="font-weight: bold; margin-right: 1rem;"></span>
+                            <form th:action="@{/habits/{id}/log(id=${habit.id})}" method="post" style="display: inline-block;">
+                                <button type="submit">Log Completion</button>
+                            </form>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit" class="secondary">Logout</button>
+        </form>
+    </main>
+</body>
+</html>
