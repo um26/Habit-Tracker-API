@@ -10,6 +10,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.habittracker.api.exception.HabitNotFoundException;
+import com.habittracker.api.exception.HabitAlreadyLoggedException;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -79,14 +81,18 @@ public class WebController {
     public String dashboard(Model model, Principal principal) {
         User user = getCurrentUser(principal);
         List<Habit> habits = habitRepository.findByUserId(user.getId());
-        Map<Long, Integer> streaks = habits.stream()
-                .collect(Collectors.toMap(Habit::getId, habit -> habitService.calculateCurrentStreak(habit.getId())));
+       Map<Long, Integer> currentStreaks = habits.stream()
+        .collect(Collectors.toMap(Habit::getId, habit -> habitService.getCurrentStreak(habit.getId())));
 
-        int dailyStreak = habitService.calculateDailyStreak(user.getId());
+        // If you want total daily streak for user, you need to implement a method in HabitService.
+        // For now, you can call getCurrentStreak for a specific habit or just set to 0
+        int dailyStreak = (int) habits.stream()
+        .filter(habit -> habitService.getCurrentStreak(habit.getId()) > 0)
+        .count();
         model.addAttribute("dailyStreak", dailyStreak);
 
         model.addAttribute("habits", habits);
-        model.addAttribute("streaks", streaks);
+        model.addAttribute("currentStreaks", currentStreaks);
         model.addAttribute("newHabit", new Habit());
         return "dashboard";
     }
@@ -99,17 +105,37 @@ public class WebController {
     }
 
     @PostMapping("/habits/{habitId}/log")
-    public String logHabitCompletion(@PathVariable Long habitId, Principal principal) {
-        User user = getCurrentUser(principal);
-        habitRepository.findByIdAndUserId(habitId, user.getId()).ifPresent(habit -> {
-            HabitLog newLog = new HabitLog();
-            newLog.setHabit(habit);
-            newLog.setCompletionDate(LocalDate.now());
-            habitLogRepository.save(newLog);
-        });
+    public String logHabitCompletion(@PathVariable Long habitId, Principal principal, RedirectAttributes redirectAttributes) {
+        System.out.println("=== CONTROLLER: logHabitCompletion called with habitId: " + habitId);
+        
+        try {
+            User user = getCurrentUser(principal);
+            System.out.println("=== CONTROLLER: user found: " + user.getId());
+            
+            habitRepository.findByIdAndUserId(habitId, user.getId()).ifPresentOrElse(
+                habit -> {
+                    System.out.println("=== CONTROLLER: habit found, calling service");
+                    habitService.logHabitCompletion(habitId);
+                },
+                () -> {
+                    System.out.println("=== CONTROLLER: habit NOT found");
+                    redirectAttributes.addFlashAttribute("error", "Habit not found!");
+                }
+            );
+            redirectAttributes.addFlashAttribute("success", "Habit logged successfully!");
+        } catch (HabitAlreadyLoggedException e) {
+            System.out.println("=== CONTROLLER: HabitAlreadyLoggedException: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Habit already logged for today!");
+        } catch (HabitNotFoundException e) {
+            System.out.println("=== CONTROLLER: HabitNotFoundException: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Habit not found!");
+        } catch (Exception e) {
+            System.out.println("=== CONTROLLER: Unexpected exception: " + e.getMessage());
+            e.printStackTrace();
+        }
         return "redirect:/dashboard";
     }
-
+    
     @GetMapping("/account")
     public String accountPage(Model model, Principal principal) {
         model.addAttribute("user", getCurrentUser(principal));
@@ -127,7 +153,7 @@ public class WebController {
             .map(friend -> new FriendDTO(
                 friend.getUsername(),
                 friend.getUniqueUserId(),
-                habitService.calculateDailyStreak(friend.getId())
+                habitService.getCurrentStreak(friend.getId())
             ))
             .collect(Collectors.toList());
 
