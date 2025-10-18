@@ -12,11 +12,16 @@ import java.time.LocalDate;
 @Table(name = "habit_logs")
 @JsonIgnoreProperties({"habit"})
 public class HabitLog {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private LocalDate completionDate;
+
+    @Column(name = "streak_count", nullable = false)
+    private int streakCount;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "habit_id", nullable = false)
