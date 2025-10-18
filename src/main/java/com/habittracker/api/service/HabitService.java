@@ -104,4 +104,7 @@ public class HabitService {
     public int getTotalCompletions(Long habitId) {
         return habitLogRepository.countByHabitId(habitId);
     }
+    public List<HabitLog> getAllHabitLogs(Long habitId) {
+        return habitLogRepository.findByHabitId(habitId);
+    }
 }

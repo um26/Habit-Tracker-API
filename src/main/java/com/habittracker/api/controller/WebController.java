@@ -81,16 +81,15 @@ public class WebController {
     public String dashboard(Model model, Principal principal) {
         User user = getCurrentUser(principal);
         List<Habit> habits = habitRepository.findByUserId(user.getId());
-       Map<Long, Integer> currentStreaks = habits.stream()
+        Map<Long, Integer> currentStreaks = habits.stream()
         .collect(Collectors.toMap(Habit::getId, habit -> habitService.getCurrentStreak(habit.getId())));
-
-        // If you want total daily streak for user, you need to implement a method in HabitService.
-        // For now, you can call getCurrentStreak for a specific habit or just set to 0
+        Map<Long, List<HabitLog>> habitLogs = habits.stream()
+    .collect(Collectors.toMap(Habit::getId, habit -> habitService.getAllHabitLogs(habit.getId())));
         int dailyStreak = (int) habits.stream()
         .filter(habit -> habitService.getCurrentStreak(habit.getId()) > 0)
         .count();
         model.addAttribute("dailyStreak", dailyStreak);
-
+        model.addAttribute("habitLogs", habitLogs);
         model.addAttribute("habits", habits);
         model.addAttribute("currentStreaks", currentStreaks);
         model.addAttribute("newHabit", new Habit());

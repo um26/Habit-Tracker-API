@@ -72,7 +72,7 @@
                     </div>
                     <div style="display: flex; align-items: center;">
                         <div class="habit-streak" th:attr="data-habit-id=${habit.id}">
-                            <span th:text="'Streak: ' + ${streaks.get(habit.id)} + ' 🔥'" style="font-weight: bold; margin-right: 1rem;"></span>
+                            <span th:text="'Streak: ' + ${currentStreaks.get(habit.id)} + ' 🔥'" style="font-weight: bold; margin-right: 1rem;"></span>
                             <div class="calendar-popup">
                                 <div class="vanilla-js-calendar"></div>
                             </div>
