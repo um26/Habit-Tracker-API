@@ -33,7 +33,8 @@
                     <ul role="listbox">
                         <li th:if="${#lists.isEmpty(unreadNotifications)}"><a>No new notifications</a></li>
                         <li th:each="notification : ${unreadNotifications}">
-                            <a th:href="${notification.link}" th:text="${notification.message}"></a>
+                            <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" 
+                            th:text="${notification.message}"></a>
                         </li>
                     </ul>
                 </details>

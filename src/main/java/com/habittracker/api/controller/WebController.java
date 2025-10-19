@@ -246,4 +246,16 @@ public class WebController {
         return userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new IllegalStateException("Cannot find logged in user"));
     }
+    @GetMapping("/notifications/{notificationId}/read")
+    public String markNotificationAsRead(@PathVariable Long notificationId, @RequestParam(required = false) String redirectTo, Principal principal) {
+        Notification notification = notificationRepository.findById(notificationId).orElse(null);
+        
+        if (notification != null) {
+            notification.setRead(true);
+            notificationRepository.save(notification);
+        }
+        
+        // Redirect to the original destination, or dashboard if not specified
+        return "redirect:" + (redirectTo != null ? redirectTo : "/dashboard");
+    }
 }
