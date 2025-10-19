@@ -15,8 +15,21 @@
         <div th:if="${success}" style="color: green; margin-bottom: 1rem;" th:text="${success}"></div>
 
         <article th:if="${!pendingRequests.isEmpty()}">
-            </article>
-        
+            <h2>Pending Friend Requests</h2>
+            <div th:each="request : ${pendingRequests}" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <strong th:text="${request.user.username}">Requester Name</strong><br>
+                    <small th:text="'Sent a friend request'"></small>
+                </div>
+                <div>
+                    <form th:action="@{/friends/accept}" method="post" style="display: inline;">
+                        <input type="hidden" name="requestId" th:value="${request.id}">
+                        <button type="submit" class="primary">Accept</button>
+                    </form>
+                </div>
+            </div>
+        </article>
+                
         <h2>Your Friends List</h2>
         <div th:if="${friends.isEmpty()}">
             <p>You haven't added any friends yet. Use the <a href="/explore">Explore</a> page to find people!</p>
