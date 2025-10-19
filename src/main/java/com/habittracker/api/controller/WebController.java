@@ -62,13 +62,18 @@ public class WebController {
         model.addAttribute("user", new User());
         return "register";
     }
-
     @PostMapping("/register")
     public String registerUser(@ModelAttribute User user, RedirectAttributes redirectAttributes) {
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Email is required.");
+            return "redirect:/register";
+        }
+        
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             redirectAttributes.addFlashAttribute("error", "Username already exists. Please choose another.");
             return "redirect:/register";
         }
+        
         String uniqueId = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 7);
         user.setUniqueUserId(uniqueId);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
