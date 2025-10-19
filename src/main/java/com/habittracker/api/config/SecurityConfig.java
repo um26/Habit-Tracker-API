@@ -1,6 +1,7 @@
 package com.habittracker.api.config;
 
 import com.habittracker.api.service.UserDetailsServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired; // Added
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -16,6 +17,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Autowired // Added
+    private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+
     @Bean
     public UserDetailsService userDetailsService(){
         return new UserDetailsServiceImpl();
@@ -25,7 +29,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    
+
     @Bean
     public AuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
@@ -37,20 +41,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Allow public access to these pages and static resources
-                .requestMatchers("/", "/login", "/register", "/css/**", "/js/**").permitAll()
-                // All other requests must be authenticated
+                // Allow public access
+                .requestMatchers("/", "/login", "/register",
+                                 "/verify-email", // Allow email verification URL
+                                 "/registration-success", // Allow success page
+                                 "/css/**", "/js/**").permitAll()
+                // Require authentication for all other requests
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login") // Specify our custom login page
-                .defaultSuccessUrl("/dashboard", true) // Redirect to dashboard on success
+                .loginPage("/login")
+                .usernameParameter("username") // Field name for email in login form
+                // Use the custom handler INSTEAD of defaultSuccessUrl
+                .successHandler(customAuthenticationSuccessHandler)
                 .permitAll()
             )
             .logout(logout -> logout
-                .logoutSuccessUrl("/login?logout") // Redirect to login on logout
+                .logoutSuccessUrl("/login?logout")
                 .permitAll()
             );
 

@@ -1,0 +1,37 @@
+nohup: ignoring input
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2025-10-18T21:13:19.794Z  INFO 88877 --- [           main] com.habittracker.api.ApiApplication      : Starting ApiApplication v0.0.1-SNAPSHOT using Java 17.0.16 with PID 88877 (/workspaces/Habit-Tracker-API/target/api-0.0.1-SNAPSHOT.jar started by vscode in /workspaces/Habit-Tracker-API)
+2025-10-18T21:13:19.802Z  INFO 88877 --- [           main] com.habittracker.api.ApiApplication      : No active profile set, falling back to 1 default profile: "default"
+2025-10-18T21:13:21.790Z  INFO 88877 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-10-18T21:13:22.064Z  INFO 88877 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 265 ms. Found 6 JPA repository interfaces.
+2025-10-18T21:13:22.912Z  INFO 88877 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-10-18T21:13:22.928Z  INFO 88877 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-10-18T21:13:22.928Z  INFO 88877 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20]
+2025-10-18T21:13:22.975Z  INFO 88877 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-10-18T21:13:22.979Z  INFO 88877 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3032 ms
+2025-10-18T21:13:23.189Z  INFO 88877 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-10-18T21:13:23.245Z  INFO 88877 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2025-10-18T21:13:23.281Z  INFO 88877 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-10-18T21:13:23.560Z  INFO 88877 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-10-18T21:13:23.588Z  INFO 88877 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-10-18T21:13:23.878Z  INFO 88877 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:habitdb user=SA
+2025-10-18T21:13:23.880Z  INFO 88877 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-10-18T21:13:25.196Z  INFO 88877 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-10-18T21:13:25.294Z  INFO 88877 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-10-18T21:13:26.575Z  INFO 88877 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-10-18T21:13:27.411Z  WARN 88877 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-10-18T21:13:27.550Z  INFO 88877 --- [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page template: index
+2025-10-18T21:13:27.777Z  INFO 88877 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@71676e5f, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@491da2fe, org.springframework.security.web.context.SecurityContextHolderFilter@b225c59, org.springframework.security.web.header.HeaderWriterFilter@19eaab0b, org.springframework.web.filter.CorsFilter@4c36416b, org.springframework.security.web.authentication.logout.LogoutFilter@71878833, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@6b0dc462, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@17ec391a, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@1f410c8, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@4515dfae, org.springframework.security.web.access.ExceptionTranslationFilter@7f2a5d5f, org.springframework.security.web.access.intercept.AuthorizationFilter@2b82781d]
+2025-10-18T21:13:28.100Z  INFO 88877 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2025-10-18T21:13:28.119Z  INFO 88877 --- [           main] com.habittracker.api.ApiApplication      : Started ApiApplication in 9.213 seconds (process running for 10.173)
+2025-10-18T21:13:29.332Z  INFO 88877 --- [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-10-18T21:13:29.333Z  INFO 88877 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-10-18T21:13:29.334Z  INFO 88877 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

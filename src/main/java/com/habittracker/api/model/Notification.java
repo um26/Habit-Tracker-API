@@ -1,12 +1,12 @@
 package com.habittracker.api.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Getter; // <-- Ensure imported
+import lombok.Setter; // <-- Ensure imported
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Getter // <-- Add annotation
+@Setter // <-- Add annotation
 @Entity
 @Table(name = "notifications")
 public class Notification {
