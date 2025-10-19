@@ -1,7 +1,7 @@
 package com.habittracker.api.config;
 
 import com.habittracker.api.service.UserDetailsServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired; // Added
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -17,50 +17,50 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired // Added
+    @Autowired // Inject the custom success handler needed for 2FA redirect
     private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
-    @Bean
+    @Bean // Provide our UserDetailsService implementation
     public UserDetailsService userDetailsService(){
         return new UserDetailsServiceImpl();
     }
 
-    @Bean
+    @Bean // Provide the password encoder
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
+    @Bean // Configure the Authentication Provider to use our UserDetailsService and PasswordEncoder
     public AuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService());
-        authenticationProvider.setPasswordEncoder(passwordEncoder());
+        authenticationProvider.setUserDetailsService(userDetailsService()); // Use our email-based loader
+        authenticationProvider.setPasswordEncoder(passwordEncoder()); // Use BCrypt for password checks
         return authenticationProvider;
     }
 
-    @Bean
+    @Bean // Configure the main security rules
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable()) // Disable CSRF for simpler form handling
             .authorizeHttpRequests(auth -> auth
-                // Allow public access
+                // Define public URLs that don't require login
                 .requestMatchers("/", "/login", "/register",
-                                 "/verify-email", // Allow email verification URL
-                                 "/registration-success", // Allow success page
+                                 "/verify-email", "/registration-success",
                                  "/css/**", "/js/**").permitAll()
-                // Require authentication for all other requests
+                // All other URLs require the user to be authenticated
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login")
-                .usernameParameter("username") // Field name for email in login form
-                // Use the custom handler INSTEAD of defaultSuccessUrl
+                .loginPage("/login") // Specify our custom login page URL
+                 // IMPORTANT: Tell Spring Security the HTML input field named 'username' contains the email
+                .usernameParameter("username")
+                // Use our custom handler to decide where to go after password check (2FA or Dashboard)
                 .successHandler(customAuthenticationSuccessHandler)
-                .permitAll()
+                .permitAll() // Allow everyone to access the login page itself
             )
             .logout(logout -> logout
-                .logoutSuccessUrl("/login?logout")
-                .permitAll()
+                .logoutSuccessUrl("/login?logout") // Where to go after logging out
+                .permitAll() // Allow everyone to log out
             );
 
         return http.build();

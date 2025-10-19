@@ -16,19 +16,24 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
+    // Spring Security calls this method with what the user typed in the 'username' field (which we labeled as Email)
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email) // Find the user by EMAIL
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
+        // Return Spring Security's UserDetails object
+        // Use user.getEmail() as the username Spring Security knows internally
+        // Use user.getPassword() for the hashed password comparison
+        // Use user.isEnabled() to check if email verification is complete
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), // Uses getEmail()
-                user.getPassword(), // Uses getPassword()
-                user.isEnabled(), // Uses isEnabled()
-                true,
-                true,
-                true,
-                new ArrayList<>()
+                user.getEmail(),
+                user.getPassword(),
+                user.isEnabled(), // Check if email is verified
+                true, // accountNonExpired
+                true, // credentialsNonExpired
+                true, // accountNonLocked
+                new ArrayList<>() // authorities (empty for simplicity)
         );
     }
 }
