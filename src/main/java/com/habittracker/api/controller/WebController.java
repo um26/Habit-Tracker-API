@@ -21,8 +21,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import com.habittracker.api.exception.HabitNotFoundException;
-import com.habittracker.api.exception.HabitAlreadyLoggedException;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -64,7 +62,6 @@ public class WebController {
     }
 
     @GetMapping("/") public String home() { return "index"; }
-
     @GetMapping("/login") public String loginPage() { return "login"; }
 
     @GetMapping("/register")
@@ -194,14 +191,14 @@ public class WebController {
         } else {
             log.warn("Invalid 2FA code during setup for user {}", user.getEmail());
             redirectAttributes.addFlashAttribute("error", "Invalid verification code. Please try again.");
-            redirectAttributes.addFlashAttribute("secret", user.getTwoFactorSecret()); // Pass back secret/QR for retry
+            redirectAttributes.addFlashAttribute("secret", user.getTwoFactorSecret());
             redirectAttributes.addFlashAttribute("qrCodeUri", tfaService.generateQrCodeImageUri(user.getTwoFactorSecret(), user.getEmail()));
             return "redirect:/setup-2fa";
         }
     }
 
     @GetMapping("/verify-2fa")
-    public String verify2faPage(HttpSession session, Model model) { // Removed unused RedirectAttributes
+    public String verify2faPage(HttpSession session, Model model) {
         String email = (String) session.getAttribute("TFA_USER_EMAIL");
         if (email == null) {
             log.warn("Accessed /verify-2fa without TFA_USER_EMAIL in session. Redirecting to login.");
@@ -212,7 +209,7 @@ public class WebController {
     }
 
     @PostMapping("/verify-2fa")
-    public String verify2faCode(@RequestParam("code") String code, HttpSession session, RedirectAttributes redirectAttributes) { // Corrected comma
+    public String verify2faCode(@RequestParam("code") String code, HttpSession session, RedirectAttributes redirectAttributes) {
         String email = (String) session.getAttribute("TFA_USER_EMAIL");
         if (email == null) {
             log.warn("POST to /verify-2fa without TFA_USER_EMAIL in session. Redirecting to login.");
@@ -230,13 +227,12 @@ public class WebController {
                  email, null, new ArrayList<>());
             SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            // --- THE FIX IS HERE ---
-            return "redirect:/dashboard"; // Redirect to the dashboard GET mapping
+            return "redirect:/dashboard"; // Redirect to GET /dashboard
 
         } else {
             log.warn("Invalid 2FA code during login verification for user {}", email);
             redirectAttributes.addFlashAttribute("error", "Invalid verification code.");
-            return "redirect:/verify-2fa"; // Redirect back to try again
+            return "redirect:/verify-2fa";
         }
     }
 
@@ -246,12 +242,11 @@ public class WebController {
         if (user == null) return "redirect:/login?error";
 
         List<Habit> habits = habitRepository.findByUserId(user.getId());
+        // --- THE FIX IS HERE: Changed getCurrentStreak to calculateCurrentStreak ---
         Map<Long, Integer> streaks = habits.stream()
                 .collect(Collectors.toMap(Habit::getId, habit -> habitService.calculateCurrentStreak(habit.getId())));
-
         int dailyStreak = habitService.calculateDailyStreak(user.getId());
         model.addAttribute("dailyStreak", dailyStreak);
-
         model.addAttribute("habits", habits);
         model.addAttribute("streaks", streaks);
         model.addAttribute("newHabit", new Habit());
@@ -269,17 +264,48 @@ public class WebController {
     }
 
     @PostMapping("/habits/{habitId}/log")
-    public String logHabitCompletion(@PathVariable Long habitId, Principal principal) {
+    public String logHabitCompletion(@PathVariable Long habitId, Principal principal, RedirectAttributes redirectAttributes) {
         User user = getCurrentUser(principal);
-        habitRepository.findByIdAndUserId(habitId, user.getId()).ifPresent(habit -> {
-            HabitLog newLog = new HabitLog();
-            newLog.setHabit(habit);
-            newLog.setCompletionDate(LocalDate.now());
-            habitLogRepository.save(newLog);
-        });
+        if (user == null) return "redirect:/login?error";
+
+        try {
+            Optional<Habit> habitOpt = habitRepository.findByIdAndUserId(habitId, user.getId());
+            if (habitOpt.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Habit not found or access denied.");
+                log.warn("User {} failed to log completion for non-existent/unauthorized habit {}", user.getEmail(), habitId);
+                return "redirect:/dashboard";
+            }
+
+            Habit habit = habitOpt.get();
+            LocalDate today = LocalDate.now();
+            LocalTime nowTime = LocalTime.now();
+
+            if (cutoverHour > 0 && nowTime.getHour() < cutoverHour) {
+                today = today.minusDays(1);
+                log.debug("Applying cutoverHour={}, treating time {} as previous day {}", cutoverHour, nowTime, today);
+            }
+
+            log.info("User {} logging completion for habit {} on date {}", user.getEmail(), habit.getId(), today);
+
+            boolean alreadyLogged = habitLogRepository.existsByHabitAndCompletionDate(habit, today);
+            if (alreadyLogged) {
+                log.info("Duplicate log prevented for user {} habit {} date {}", user.getEmail(), habit.getId(), today);
+                redirectAttributes.addFlashAttribute("info", "Habit already logged for " + today);
+            } else {
+                HabitLog newLog = new HabitLog();
+                newLog.setHabit(habit);
+                newLog.setCompletionDate(today);
+                habitLogRepository.save(newLog);
+                log.info("Saved new HabitLog id={} for user {} habit={} date={}", newLog.getId(), user.getEmail(), habit.getId(), newLog.getCompletionDate());
+                redirectAttributes.addFlashAttribute("success", "Logged habit completion for " + today);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to log habit completion for user {} habit {}: {}", user.getEmail(), habitId, ex.getMessage(), ex);
+            redirectAttributes.addFlashAttribute("error", "Error logging habit.");
+        }
         return "redirect:/dashboard";
     }
-    
+
     @GetMapping("/account")
     public String accountPage(Model model, Principal principal) {
         User user = getCurrentUser(principal);
@@ -299,7 +325,7 @@ public class WebController {
             .map(friend -> new FriendDTO(
                 friend.getUsername(),
                 friend.getUniqueUserId(),
-                habitService.getCurrentStreak(friend.getId())
+                habitService.calculateDailyStreak(friend.getId())
             ))
             .collect(Collectors.toList());
 
@@ -414,7 +440,6 @@ public class WebController {
         return "redirect:/friends";
     }
 
-    // Helper method
     private User getCurrentUser(Principal principal) {
         if (principal == null) {
             log.warn("Attempted to get current user but Principal was null.");
@@ -423,4 +448,4 @@ public class WebController {
         String email = principal.getName();
         return userRepository.findByEmail(email).orElse(null);
     }
-}
+} // <-- Ensure this final brace is present
