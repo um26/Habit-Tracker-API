@@ -1,6 +1,7 @@
 package com.habittracker.api.config;
 
 import com.habittracker.api.service.UserDetailsServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -12,9 +13,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
     @Bean
     public UserDetailsService userDetailsService(){
@@ -25,7 +30,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    
+
     @Bean
     public AuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
@@ -37,20 +42,33 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Allow public access to these pages and static resources
-                .requestMatchers("/", "/login", "/register", "/css/**", "/js/**").permitAll()
-                // All other requests must be authenticated
+                // Public URLs that don't require authentication
+                .requestMatchers(
+                    "/",
+                    "/login",
+                    "/register",
+                    "/verify-email",           // MUST be public
+                    "/registration-success",
+                    "/setup-2fa",              // Allow access before login if needed
+                    "/verify-2fa",             // Allow access for 2FA verification
+                    "/css/**",
+                    "/js/**",
+                    "/images/**",
+                    "/static/**"
+                ).permitAll()
+                // All other requests require authentication
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login") // Specify our custom login page
-                .defaultSuccessUrl("/dashboard", true) // Redirect to dashboard on success
+                .loginPage("/login")
+                .usernameParameter("username")
+                .successHandler(customAuthenticationSuccessHandler)
                 .permitAll()
             )
             .logout(logout -> logout
-                .logoutSuccessUrl("/login?logout") // Redirect to login on logout
+                .logoutSuccessUrl("/login?logout")
                 .permitAll()
             );
 

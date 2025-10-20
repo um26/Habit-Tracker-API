@@ -9,29 +9,34 @@
         form { display: flex; flex-direction: column; gap: 10px; }
         input { padding: 8px; }
         button { padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer; }
-        .error { color: red; }
+        .error { color: #d83a52; }
         a { color: #007bff; }
     </style>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <h1>Login</h1>
-    
-    <div th:if="${param.error}" class="error">
-        Invalid username or password.
+
+    <div th:if="${success}" style="color: #28a745; margin-bottom: 10px;" th:text="${success}"></div>
+    <div th:if="${param.error}" class="error" style="margin-bottom: 10px;">
+        Invalid email or password.
+    </div>
+    <div th:if="${param.logout}" style="color: #17a2b8; margin-bottom: 10px;">
+        You have been logged out successfully.
     </div>
 
-    <div th:if="${success}" style="color: green; margin-bottom: 10px;" th:text="${success}"></div>
-
-    
     <form th:action="@{/login}" method="post">
         <div>
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
+            <label for="username">Email:</label>
+            <input type="email" id="username" name="username" required>
         </div>
         <div>
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
         </div>
+
+        <div class="cf-turnstile" th:attr="data-sitekey=${turnstileSiteKey}"></div>
+
         <div>
             <button type="submit">Log In</button>
         </div>

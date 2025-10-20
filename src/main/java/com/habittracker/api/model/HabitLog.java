@@ -2,12 +2,12 @@ package com.habittracker.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Getter; // <-- Ensure imported
+import lombok.Setter; // <-- Ensure imported
 import java.time.LocalDate;
 
-@Getter
-@Setter
+@Getter // <-- Add annotation
+@Setter // <-- Add annotation
 @Entity
 @Table(name = "habit_logs")
 @JsonIgnoreProperties({"habit"})
