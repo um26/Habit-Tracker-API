@@ -4,97 +4,47 @@
     <meta charset="UTF-8">
     <title>My Friends</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-    <style>
-        body { padding-top: 70px; }
-        nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
-        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
-        .icon-button { padding: 0.5rem 0.75rem; }
-        /* Flash message styles */
-        .success-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
-        .info-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
-        .error-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
-    </style>
+    <style> body { padding-top: 70px; } nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); } </style>
 </head>
 <body>
     <main class="container">
         <nav>
-            <ul>
-                <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
-            </ul>
-            <ul>
-                <li><a href="/dashboard" class="secondary outline"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
-                <li><a href="/explore" class="secondary outline"><i data-feather="search" class="icon"></i>Explore</a></li>
-                <li><a href="/friends" role="button" class="contrast outline"><i data-feather="users" class="icon"></i>Friends</a></li>
-                <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
-                <li>
-                    <details role="list" dir="rtl">
-                        <summary aria-haspopup="listbox" role="button" class="secondary outline icon-button">
-                             <i data-feather="bell"></i>
-                             <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
-                        </summary>
-                         <ul role="listbox">
-                            <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
-                            <li th:each="notification : ${unreadNotifications}">
-                               <a th:href="${notification.link}" style="display: flex; align-items: center;">
-                                   <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
-                                   <span th:text="${notification.message}"></span>
-                               </a>
-                            </li>
-                         </ul>
-                    </details>
-                </li>
-                 <li>
-                    <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
-                        <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
-                    </form>
-                </li>
-            </ul>
-        </nav>
+            </nav>
 
-        <h1><i data-feather="users" class="icon"></i>My Friends</h1>
-
-         <div style="margin-top: 1rem;">
-             <div th:if="${success}" role="alert" class="success-flash" th:text="${success}"></div>
-             <div th:if="${info}" role="alert" class="info-flash" th:text="${info}"></div>
-             <div th:if="${error}" role="alert" class="error-flash" th:text="${error}"></div>
-         </div>
-
+        <h1>My Friends</h1>
+        <div th:if="${success}" style="color: green; margin-bottom: 1rem;" th:text="${success}"></div>
 
         <article th:if="${!pendingRequests.isEmpty()}">
-             <h2><i data-feather="user-plus" class="icon"></i>Incoming Requests</h2>
-             <div th:each="request : ${pendingRequests}">
-                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid var(--pico-form-element-border-color); border-radius: var(--pico-border-radius);">
-                     <span><i data-feather="user" class="icon"></i><strong th:text="${request.user.username}"></strong> wants to be your friend.</span>
-                     <div>
-                         <form th:action="@{/friends/accept}" method="post" style="display: inline-block;">
-                             <input type="hidden" name="requestId" th:value="${request.id}" />
-                             <button type="submit" title="Accept Request"><i data-feather="user-check" class="icon"></i>Accept</button>
-                         </form>
-                         </div>
-                 </div>
-             </div>
+            <h2>Pending Friend Requests</h2>
+            <div th:each="request : ${pendingRequests}" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <strong th:text="${request.user.username}">Requester Name</strong><br>
+                    <small th:text="'Sent a friend request'"></small>
+                </div>
+                <div>
+                    <form th:action="@{/friends/accept}" method="post" style="display: inline;">
+                        <input type="hidden" name="requestId" th:value="${request.id}">
+                        <button type="submit" class="primary">Accept</button>
+                    </form>
+                </div>
+            </div>
         </article>
-
-        <h2><i data-feather="list" class="icon"></i>Your Friends List</h2>
+                
+        <h2>Your Friends List</h2>
         <div th:if="${friends.isEmpty()}">
             <p>You haven't added any friends yet. Use the <a href="/explore">Explore</a> page to find people!</p>
         </div>
         <article th:unless="${friends.isEmpty()}">
-             <div th:each="friend : ${friends}" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.5rem;">
-                 <div>
-                     <strong th:text="${friend.username}">Friend Name</strong><br>
-                     <small th:text="'Daily Streak: ' + ${friend.dailyStreak} + ' 🔥'"></small>
-                 </div>
-                 <form th:action="@{/friends/{friendId}/nudge(friendId=${friend.uniqueUserId})}" method="post">
-                     <button type="submit" class="secondary outline" title="Send a nudge notification"><i data-feather="send" class="icon"></i>Nudge</button>
-                 </form>
-             </div>
+            <div th:each="friend : ${friends}" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <strong th:text="${friend.username}">Friend Name</strong><br>
+                    <small th:text="'Daily Streak: ' + ${friend.dailyStreak} + ' 🔥'"></small>
+                </div>
+                <form th:action="@{/friends/{friendId}/nudge(friendId=${friend.uniqueUserId})}" method="post">
+                    <button type="submit" class="secondary">Nudge</button>
+                </form>
+            </div>
         </article>
-
     </main>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <script>
-      feather.replace();
-    </script>
 </body>
 </html>
