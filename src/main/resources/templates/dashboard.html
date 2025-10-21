@@ -8,230 +8,148 @@
     <style>
         body { padding-top: 70px; }
         nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
-        .habit-streak { position: relative; cursor: pointer; overflow: visible; } /* Added overflow */
-        .calendar-popup { display: none; position: absolute; bottom: 125%; right: 0; background: var(--card-background-color); border: 1px solid var(--card-border-color); border-radius: var(--border-radius); box-shadow: var(--card-box-shadow); z-index: 1001; padding: 0.4rem; } /* Added padding */
-        .vanilla-js-calendar { min-width: 180px; min-height: 140px; } /* Added min size */
-        /* JS controls visibility now */
+        .habit-streak { position: relative; cursor: pointer; overflow: visible; }
+        .calendar-popup { display: none; position: absolute; bottom: 125%; right: 0; background: var(--card-background-color); border: 1px solid var(--card-border-color); border-radius: var(--border-radius); box-shadow: var(--card-box-shadow); z-index: 1001; padding: 0.4rem; }
+        .vanilla-js-calendar { min-width: 220px; min-height: 180px; }
         .habit-streak .calendar-popup { display: none; }
         .habit-streak .calendar-popup.visible { display: block; }
-
-         /* Modal styles (Keep if you added them previously) */
-        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-backdrop.active { display: flex; }
-        .modal-calendar-container { background: var(--card-background-color); padding: 1rem; border-radius: 8px; max-width: 900px; width: 95%; max-height: 90vh; overflow: auto; }
-        .modal-close { float: right; border: none; background: transparent; font-size: 1.25rem; cursor: pointer; }
-
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .icon-button { padding: 0.5rem 0.75rem; } /* Smaller padding for icon-only buttons */
+        .daily-streak-card { text-align: center; }
+        .habit-actions form { margin-left: 0.5rem; }
+        nav details[role="list"] { width: auto; }
+        nav details[role="list"] summary { padding: 0.5rem; }
+        nav details[role="list"] ul { white-space: nowrap; }
+        /* Flash message styles */
+        .success-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
+        .info-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
+        .error-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
     </style>
 </head>
 <body>
 <main class="container">
     <nav>
         <ul>
-            <li><strong>Habit Tracker</strong></li>
+            <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
         </ul>
         <ul>
-            <li><a href="/dashboard" role="button">Dashboard</a></li>
-            <li><a href="/explore">Explore</a></li>
-            <li><a href="/friends">Friends</a></li>
-            <li><a href="/account">My Account</a></li>
+            <li><a href="/dashboard" role="button" class="contrast outline"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
+            <li><a href="/explore" class="secondary outline"><i data-feather="search" class="icon"></i>Explore</a></li>
+            <li><a href="/friends" class="secondary outline"><i data-feather="users" class="icon"></i>Friends</a></li>
+            <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
             <li>
                 <details role="list" dir="rtl">
-                    <summary aria-haspopup="listbox" role="button">
-                        <span>🔔 Notification Panel</span>
-                        <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'"></span>
+                    <summary aria-haspopup="listbox" role="button" class="secondary outline icon-button">
+                        <i data-feather="bell"></i>
+                        <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
                     </summary>
                     <ul role="listbox">
-                        <li th:if="${#lists.isEmpty(unreadNotifications)}"><a>No new notifications</a></li>
+                        <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
                         <li th:each="notification : ${unreadNotifications}">
-                            <a th:href="${notification.link}" th:text="${notification.message}"></a>
+                           <a th:href="${notification.link}" style="display: flex; align-items: center;">
+                               <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
+                               <span th:text="${notification.message}"></span>
+                           </a>
                         </li>
                     </ul>
                 </details>
             </li>
+             <li>
+                <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
+                    <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
+                </form>
+            </li>
         </ul>
     </nav>
 
-    <div style="margin-top: 5rem;">
-         <div th:if="${success}" role="status" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; background: var(--success-color, #43a047); color: white;" th:text="${success}"></div>
-         <div th:if="${info}" role="status" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; background: var(--muted-color, #757575); color: white;" th:text="${info}"></div>
-         <div th:if="${error}" role="alert" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; background: var(--error-color, #d83a52); color: white;" th:text="${error}"></div>
-     </div>
+    <div style="margin-top: 1rem;">
+         <div th:if="${success}" role="alert" class="success-flash" th:text="${success}"></div>
+         <div th:if="${info}" role="alert" class="info-flash" th:text="${info}"></div>
+         <div th:if="${error}" role="alert" class="error-flash" th:text="${error}"></div>
+    </div>
 
-    <article style="text-align: center; margin-bottom: 2rem;">
-        <h3>Your Daily Streak</h3>
-        <h1 style="margin: 0;" th:text="${dailyStreak} + ' Days 🔥'">0 Days 🔥</h1>
-        <small>Complete at least one habit every day to keep it going!</small>
-    </article>
+    <div class="grid">
+        <article class="daily-streak-card">
+            <h3><i data-feather="zap" class="icon"></i>Daily Streak</h3>
+            <h1 style="margin: 0;" th:text="${dailyStreak} + ' Days 🔥'">0 Days 🔥</h1>
+            <small>Complete one habit daily</small>
+        </article>
+        <article>
+            <h2><i data-feather="plus-circle" class="icon"></i>Add New Habit</h2>
+            <form th:action="@{/habits}" th:object="${newHabit}" method="post">
+                <input type="text" th:field="*{name}" placeholder="Habit name (e.g., Read for 15 mins)" required>
+                <input type="text" th:field="*{description}" placeholder="Description (optional)">
+                <button type="submit"><i data-feather="plus" class="icon"></i>Add Habit</button>
+            </form>
+        </article>
+    </div>
 
-    <h1>Your Dashboard</h1>
-
-    <article class="add-habit-form">
-        <h2>Add a New Habit</h2>
-        <form th:action="@{/habits}" th:object="${newHabit}" method="post">
-            <input type="text" th:field="*{name}" placeholder="Habit name (e.g., Read for 15 mins)" required>
-            <input type="text" th:field="*{description}" placeholder="Description (optional)">
-            <button type="submit">Add Habit</button>
-        </form>
-    </article>
-
-    <h2>My Habits</h2>
+    <h2 style="margin-top: 2rem;"><i data-feather="list" class="icon"></i>My Habits</h2>
     <div th:if="${#lists.isEmpty(habits)}">
         <p>You haven't added any habits yet. Add one above to get started!</p>
     </div>
     <div th:unless="${#lists.isEmpty(habits)}">
-        <div th:each="habit : ${habits}" class="habit-item">
-            <article>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong th:text="${habit.name}">Habit Name</strong>
-                        <p th:text="${habit.description}" style="margin: 5px 0 0 0; color: var(--muted-color);">Description</p>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <div class="habit-streak" th:attr="data-habit-id=${habit.id}">
-                            <span th:text="'Streak: ' + ${streaks.get(habit.id)} + ' 🔥'" style="font-weight: bold; margin-right: 1rem;"></span>
-                            <div class="calendar-popup">
-                                <div class="vanilla-js-calendar"></div>
-                            </div>
-                        </div>
-                        <form th:action="@{/habits/{id}/log(id=${habit.id})}" method="post" style="display: inline-block;">
-                            <button type="submit">Log Completion</button>
-                        </form>
-                    </div>
-                </div>
-            </article>
-        </div>
+        <article th:each="habit : ${habits}" style="margin-bottom: 1rem;">
+             <div style="display: flex; justify-content: space-between; align-items: center;">
+                 <div>
+                     <strong th:text="${habit.name}">Habit Name</strong>
+                     <p th:text="${habit.description}" style="margin: 5px 0 0 0; color: var(--pico-muted-color);">Description</p>
+                 </div>
+                 <div style="display: flex; align-items: center;" class="habit-actions">
+                     <div class="habit-streak" th:attr="data-habit-id=${habit.id}">
+                         <span th:text="'Streak: ' + ${streaks.get(habit.id)} + ' 🔥'" style="font-weight: bold; margin-right: 1rem;"></span>
+                         <div class="calendar-popup">
+                             <div class="vanilla-js-calendar"></div>
+                         </div>
+                     </div>
+                     <form th:action="@{/habits/{id}/log(id=${habit.id})}" method="post" style="display: inline-block;">
+                         <button type="submit" class="outline icon-button" title="Log Completion"><i data-feather="check"></i></button>
+                     </form>
+                     </div>
+             </div>
+         </article>
     </div>
 
-    <form class="logout-form" th:action="@{/logout}" method="post">
-        <button type="submit" class="secondary">Logout</button>
-    </form>
 </main>
 
-<div id="calendarModal" class="modal-backdrop" role="dialog" aria-hidden="true">
-    <div class="modal-calendar-container" role="document">
-        <button id="modalClose" class="modal-close" aria-label="Close calendar">✕</button>
-        <h3 id="modalTitle">Habit calendar</h3>
-        <div id="modalCalendar" style="margin-top: 1rem;"></div>
-    </div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.6.5/build/vanilla-js-calendar.min.js"></script>
 <script>
-!function(){"use strict";const e={default:"#000",month:"#333",day:"#333",weekday:"#333",holiday:"#A10000",saturday:"#0000A1",sunday:"#A10000"},t={grid:e,header:e,week:e},a={bg:"#fff",header:e,week:e,grid:t},n={bg:"#1c1c1e",header:{default:"#fff",month:"#fff",day:"#fff",weekday:"#fff"},week:{default:"#fff",weekday:"#fff"},grid:{default:"#fff",month:"#fff",day:"#fff",weekday:"#fff",holiday:"#ff5252",saturday:"#5252ff",sunday:"#ff5252"}},s=["January","February","March","April","May","June","July","August","September","October","November","December"],i=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],o={months:{shorthand:s.map((e=>e.substring(0,3))),full:s},weekdays:{shorthand:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],full:i}},r={lang:"en-US",iso8601:!0},d=e=>void 0===e,l=e=>null===e,c=e=>"number"==typeof e,h=e=>"string"==typeof e,p=e=>e instanceof Date,u=e=>Array.isArray(e),m=e=>"object"==typeof e&&!l(e)&&!u(e),g=(e,t=void 0,a=!1)=>{if(!p(e))return;const n=["YYYY","MM","DD"],s=e=>String(e).padStart(2,"0"),i={YYYY:e.getFullYear(),MM:s(e.getMonth()+1),DD:s(e.getDate())};return a?(n.forEach((e=>t=t.replace(e,String(i[e])))),t):t?t.replace(/YYYY|MM|DD/g,(e=>String(i[e]))):n.map((e=>String(i[e]))).join("-")},f=(e,t)=>!!e&&new Date(e.getFullYear(),e.getMonth(),e.getDate()+t),y=(e,t,a)=>{if(!(p(e)&&p(t)&&c(a)))return!1;const n=new Date(e.getTime()),s=new Date(t.getTime());return n.setDate(n.getDate()+a),g(n)===g(s)},v=(e,t,a)=>{const n=new Date(e.getTime());return h(t)?(n.setMonth(n.getMonth()+a),n):h(a)?(n.setFullYear(n.getFullYear()+t),n):void 0},b=e=>({year:e.getFullYear(),month:e.getMonth(),day:e.getDate()}),w=(e,t)=>{const a=e.split("-").map(Number),n=t.split("-").map(Number);return new Date(a[0],a[1]-1,a[2]).getTime()-new Date(n[0],n[1]-1,n[2]).getTime()},k=(e,t)=>{const a=e.map((e=>w(e,t)>0?w(e,t):1/0)),n=Math.min(...a);return a.indexOf(n)},D=e=>{const t=[...e].sort(((e,t)=>w(e,t)));return{min:t[0],max:t[t.length-1]}},T=(e,t)=>(e.getTime()-t.getTime())/864e5,L={read:e=>h(e)?e.replace(/-/g,"/"):g(e,"YYYY/MM/DD"),write:e=>{const t=new Date(e);return p(t)?g(t):""}};class C{constructor(e,t){this.HTMLElement=e,this.type=t,this.active=this.type}#e(e,t){"add"===t?e.classList.add(this.CSSClasses.active):e.classList.remove(this.CSSClasses.active)}#t(){this.HTMLElement.classList.add(this.CSSClasses.type),this.HTMLElement.dataset.calendarType=this.type}get.CSSClasses(){const e=`v-calendar-${this.type}`;return{type:e,active:`${e}--active`}}get.HTMLElement(){return this.HTMLElement}set.HTMLElement(e){this.HTMLElement=e}get.type(){return this.type}set.type(e){this.type=e,this.#t()}get.active(){return this.HTMLElement.classList.contains(this.CSSClasses.active)}set.active(e){this.active=e,this.#e(this.HTMLElement,e?"add":"remove")}}class x extends C{constructor(e,t){super(e,"day"),this.day=t}#a(){this.HTMLElement.innerText=String(this.day).padStart(2,"0")}get.day(){return this.day}set.day(e){this.day=e,this.#a()}}class S extends C{constructor(e,t){super(e,"month"),this.month=t}#n(){this.HTMLElement.innerText=o.months.shorthand[this.month]}get.month(){return this.month}set.month(e){this.month=e,this.#n()}}class M extends C{constructor(e,t){super(e,"year"),this.year=t}#s(){this.HTMLElement.innerText=String(this.year)}get.year(){return this.year}set.year(e){this.year=e,this.#s()}}class E{constructor(e){var t;this.isInit=!1,this.input=!1,this.HTMLInputElement=null,this.HTMLElement=e,this.type="default",this.date=r,this.months=o.months,this.weekdays=o.weekdays,this.actions={getDays:null,getMonths:null,getYears:null,clickDay:null,clickMonth:null,clickYear:null,clickArrow:null,changeMonth:null,changeYear:null,changeToInput:null,selectDay:null,selectMonth:null,selectYear:null,selectDate:null,prevMonth:null,nextMonth:null,prevYear:null,nextYear:null,changeToDefault:null},this.popups={},this.CSSClasses={},this.DOMTemplates={},this.settings={lang:(null===(t=navigator.language)?void 0:t.substring(0,5))||"en-US",iso8601:!0,range:{min:"1970-01-01",max:"2470-12-31",disabled:null,enabled:null},date:r,selected:{dates:null,month:null,year:null,holidays:null,today:!0},visibility:{theme:"light",monthShort:!0,weekNumbers:!1,weekend:!0,today:!0,disabled:!1,daysOutside:!0}},this.userTime=null,this.correctTime=!1}#i(e){const t="YYYY-MM-DD";if(d(e))return g(new Date,t);if(h(e)){const a=e.match(/\d{4}-\d{2}-\d{2}/);return l(a)?void 0:a[0]}if(p(e))return g(e,t)}#o(){this.settings.date.min=this.#i(this.settings.range.min),this.settings.date.max=this.#i(this.settings.range.max)}#r(e){const t="en-US";if(!e)return o;const a={};return a.months=Intl.Locale?new Intl.Locale(e).language==="ar"?{shorthand:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],full:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]}:{shorthand:[...Array(12).keys()].map((t=>new Date(new Date().setMonth(t)).toLocaleString(e,{month:"short"}))),full:[...Array(12).keys()].map((t=>new Date(new Date().setMonth(t)).toLocaleString(e,{month:"long"})))}:o.months,a.weekdays=Intl.Locale?new Intl.Locale(e).language==="ar"?{shorthand:["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"],full:["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]}:{shorthand:[...Array(7).keys()].map((t=>new Date(2023,0,t+1).toLocaleString(e,{weekday:"short"}))),full:[...Array(7).keys()].map((t=>new Date(2023,0,t+1).toLocaleString(e,{weekday:"long"})))}:o.weekdays,this.months=a.months,this.weekdays=a.weekdays,this.settings.lang=e,e!==t&&(this.date.lang=e),a}get.HTMLElement(){return this.HTMLElement}set.HTMLElement(e){this.HTMLElement=e}get.type(){return this.type}set.type(e){this.type=e}get.date(){return this.date}set.date(e){this.date=e}get.months(){return this.months}set.months(e){this.months=e}get.weekdays(){return this.weekdays}set.weekdays(e){this.weekdays=e}get.actions(){return this.actions}set.actions(e){this.actions=e}get.popups(){return this.popups}set.popups(e){this.popups=e}get.CSSClasses(){return this.CSSClasses}set.CSSClasses(e){this.CSSClasses=e}get.DOMTemplates(){return this.DOMTemplates}set.DOMTemplates(e){this.DOMTemplates=e}get.settings(){return this.settings}set.settings(e){this.settings=e}get.userTime(){return this.userTime}set.userTime(e){this.userTime=e}get.correctTime(){return this.correctTime}set.correctTime(e){this.correctTime=e}}class N extends E{constructor(e,t,a){super(e),this.vanillaCalendar=a,this.HTMLElement=e,this.arrowPrev=t.prev,this.arrowNext=t.next,this.isInit=!1}#l(){this.arrowPrev.addEventListener("click",this.actions.clickArrow),this.arrowNext.addEventListener("click",this.actions.clickArrow)}destroy(){this.arrowPrev.removeEventListener("click",this.actions.clickArrow),this.arrowNext.removeEventListener("click",this.actions.clickArrow)}init(){this.isInit||(this.#l(),this.isInit=!0)}get.arrowPrev(){return this.arrowPrev}set.arrowPrev(e){this.arrowPrev=e}get.arrowNext(){return this.arrowNext}set.arrowNext(e){this.arrowNext=e}}class A extends E{constructor(e,t){super(e),this.HTMLElement=e,this.info=t.info,this.day=t.day,this.weekday=t.weekday,this.weekNumbers=t.weekNumbers,this.isInit=!1}#c(e){const t=document.createElement("b");t.className=this.CSSClasses.day,e.appendChild(t)}#h(e){const t=document.createElement("b");t.className=this.CSSClasses.weekday,e.appendChild(t)}#p(){this.settings.weekNumbers&&this.HTMLElement.classList.add(this.CSSClasses.weekNumbers),this.settings.iso8601?(this.weekday.append(...this.weekdays.shorthand.map(((e,t)=>t>0?e:this.weekdays.shorthand[this.weekdays.shorthand.length-1])).splice(1)),this.weekday.prepend(this.weekdays.shorthand[0])):(this.weekday.append(...this.weekdays.shorthand),this.weekday.append(this.weekdays.shorthand[0]),this.weekday.removeChild(this.weekday.firstChild)),this.#u(),this.#m()}#u(){if(!this.day)return;const e=document.createElement("div");e.className=this.CSSClasses.dayWrapper,this.day.appendChild(e);for(let t=0;t<42;t++)this.#c(e)}#m(){if(!this.weekday)return;const e=document.createElement("div");e.className=this.CSSClasses.weekdayWrapper,this.weekday.appendChild(e);for(let t=0;t<7;t++)this.#h(e)}#g(){this.settings.weekNumbers&&(this.weekNumbers.innerHTML="");for(let e=0;e<6;e++){const t=document.createElement("b");t.className=this.CSSClasses.weekNumber,this.weekNumbers.appendChild(t)}}#l(){var e,t;null===(e=this.day)?void 0:e.querySelectorAll(`.${this.CSSClasses.day}`).forEach((e=>e.addEventListener("click",this.actions.clickDay))),null===(t=this.weekday)?void 0:t.querySelectorAll(`.${this.CSSClasses.weekday}`).forEach((e=>e.removeEventListener("click",this.actions.clickDay)))}create(){this.#p()}destroy(){var e,t;null===(e=this.day)?void 0:e.querySelectorAll(`.${this.CSSClasses.day}`).forEach((e=>e.removeEventListener("click",this.actions.clickDay))),null===(t=this.weekday)?void 0:t.querySelectorAll(`.${this.CSSClasses.weekday}`).forEach((e=>e.removeEventListener("click",this.actions.clickDay)))}init(){this.isInit||(this.settings.weekNumbers&&this.weekNumbers.classList.add(this.CSSClasses.weekNumbers),this.#g(),this.#l(),this.isInit=!0)}}class O extends E{constructor(e,t){super(e),this.HTMLElement=e,this.info=t.info,this.wrapper=t.wrapper,this.isInit=!1}#c(e){const t=document.createElement("button");t.className=this.CSSClasses.month,e.appendChild(t)}#p(){this.#u()}#u(){for(let e=0;e<12;e++)this.#c(this.wrapper)}#l(){this.wrapper.querySelectorAll(`.${this.CSSClasses.month}`).forEach((e=>e.addEventListener("click",this.actions.clickMonth)))}create(){this.#p()}destroy(){this.wrapper.querySelectorAll(`.${this.CSSClasses.month}`).forEach((e=>e.removeEventListener("click",this.actions.clickMonth)))}init(){this.isInit||(this.#l(),this.isInit=!0)}}class Y extends E{constructor(e,t){super(e),this.HTMLElement=e,this.info=t.info,this.wrapper=t.wrapper,this.isInit=!1}#c(e){const t=document.createElement("button");t.className=this.CSSClasses.year,e.appendChild(t)}#p(){this.#u()}#u(){for(let e=0;e<12;e++)this.#c(this.wrapper)}#l(){this.wrapper.querySelectorAll(`.${this.CSSClasses.year}`).forEach((e=>e.addEventListener("click",this.actions.clickYear)))}create(){this.#p()}destroy(){this.wrapper.querySelectorAll(`.${this.CSSClasses.year}`).forEach((e=>e.removeEventListener("click",this.actions.clickYear)))}init(){this.isInit||(this.#l(),this.isInit=!0)}}class B extends E{constructor(e,t,a){var n,s;super(e),this.vanillaCalendar=a,this.HTMLElement=e,this.container=t.container,this.month=t.month,this.year=t.year,this.weekday=t.weekday,this.day=t.day,this.weekNumbers=t.weekNumbers,this.arrows=new N(this.HTMLElement,t.arrows,this.vanillaCalendar),this.months=new O(this.HTMLElement,{info:t.info,wrapper:t.months}),this.years=new Y(this.HTMLElement,{info:t.info,wrapper:t.years}),this.days=new A(this.HTMLElement,{info:t.info,day:this.day,weekday:this.weekday,weekNumbers:this.weekNumbers}),this.isInit=!1,null===(n=this.month) || n.addEventListener("click",this.actions.getMonths),null===(s=this.year) || s.addEventListener("click",this.actions.getYears)}get.HTMLElement(){return this.HTMLElement}set.HTMLElement(e){this.HTMLElement=e}get.container(){return this.container}set.container(e){this.container=e}get.month(){return this.month}set.month(e){this.month=e}get.year(){return this.year}set.year(e){this.year=e}get.weekday(){return this.weekday}set.weekday(e){this.weekday=e}get.day(){return this.day}set.day(e){this.day=e}get.arrows(){return this.arrows}set.arrows(e){this.arrows=e}get.months(){return this.months}set.months(e){this.months=e}get.years(){return this.years}set.years(e){this.years=e}get.days(){return this.days}set.days(e){this.days=e}}class F{constructor(e,t){this.isInit=!1,this.input=!1,this.HTMLInputElement=null,this.HTMLElement=e,this.type="default",this.date=r,this.months=o.months,this.weekdays=o.weekdays,this.actions={getDays:null,getMonths:null,getYears:null,clickDay:null,clickMonth:null,clickYear:null,clickArrow:null,changeMonth:null,changeYear:null,changeToInput:null,selectDay:null,selectMonth:null,selectYear:null,selectDate:null,prevMonth:null,nextMonth:null,prevYear:null,nextYear:null},this.popups={},this.CSSClasses={},this.DOMTemplates={},this.settings={lang:"en-US",iso8601:!0,range:{min:"1970-01-01",max:"2470-12-31",disabled:null,enabled:null},date:r,selected:{dates:null,month:null,year:null,holidays:null,today:!0},visibility:{theme:"light",monthShort:!0,weekNumbers:!1,weekend:!0,today:!0,disabled:!1,daysOutside:!0}},this.userTime=null,this.correctTime=!1,this.currentType=this.type,this.selectedKeeping=null,this.userTime=t}#i(e){const t="YYYY-MM-DD";if(d(e))return g(new Date,t);if(h(e)){const a=e.match(/\d{4}-\d{2}-\d{2}/);return l(a)?void 0:a[0]}if(p(e))return g(e,t)}#o(){this.settings.date.min=this.#i(this.settings.range.min),this.settings.date.max=this.#i(this.settings.range.max)}#r(e){const t="en-US";if(!e)return o;const a={};return a.months=Intl.Locale?new Intl.Locale(e).language==="ar"?{shorthand:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],full:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]}:{shorthand:[...Array(12).keys()].map((t=>new Date(new Date().setMonth(t)).toLocaleString(e,{month:"short"}))),full:[...Array(12).keys()].map((t=>new Date(new Date().setMonth(t)).toLocaleString(e,{month:"long"})))}:o.months,a.weekdays=Intl.Locale?new Intl.Locale(e).language==="ar"?{shorthand:["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"],full:["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]}:{shorthand:[...Array(7).keys()].map((t=>new Date(2023,0,t+1).toLocaleString(e,{weekday:"short"}))),full:[...Array(7).keys()].map((t=>new Date(2023,0,t+1).toLocaleString(e,{weekday:"long"})))}:o.weekdays,this.months=a.months,this.weekdays=a.weekdays,this.settings.lang=e,e!==t&&(this.date.lang=e),a}get.HTMLElement(){return this.HTMLElement}set.HTMLElement(e){this.HTMLElement=e}get.type(){return this.type}set.type(e){this.type=e}get.date(){return this.date}set.date(e){this.date=e}get.months(){return this.months}set.months(e){this.months=e}get.weekdays(){return this.weekdays}set.weekdays(e){this.weekdays=e}get.actions(){return this.actions}set.actions(e){this.actions=e}get.popups(){return this.popups}set.popups(e){this.popups=e}get.CSSClasses(){return this.CSSClasses}set.CSSClasses(e){this.CSSClasses=e}get.DOMTemplates(){return this.DOMTemplates}set.DOMTemplates(e){this.DOMTemplates=e}get.settings(){return this.settings}set.settings(e){this.settings=e}get.userTime(){return this.userTime}set.userTime(e){this.userTime=e}get.correctTime(){return this.correctTime}set.correctTime(e){this.correctTime=e}}class j extends F{constructor(e,t,a){super(e,a),this.isInit=!1,this.#f(t),this.#d(),this.#o(),this.date.today=g(new Date),this.settings.selected.today&&this.#y()}#f(e){const t=JSON.parse(JSON.stringify(r));if(this.date={...t,lang:this.settings.lang,iso8601:this.settings.iso8601},!e)return;const a=JSON.parse(JSON.stringify(this.settings));a.lang=e.lang||this.settings.lang,a.iso8601="iso8601"in e?e.iso8601:this.settings.iso8601,e.range&&(a.range={...this.settings.range,...e.range}),e.date&&(a.date={...this.settings.date,...e.date}),e.selected&&(a.selected={...this.settings.selected,...e.selected}),e.visibility&&(a.visibility={...this.settings.visibility,...e.visibility}),this.settings=a}#y(){const e=this.#i(this.userTime||this.date.today);this.settings.selected.dates=[e],this.settings.selected.month=new Date(e).getMonth(),this.settings.selected.year=new Date(e).getFullYear()}#d(){this.#r(this.settings.lang),this.settings.iso8601?this.date.week M.querySelectorAll("b"),n=t?this.HTMLInputElement:document.querySelectorAll(e);n.length>1?n.forEach((e=>this.#v(e))):n.length>1||this.#v(n[0])}update(){var e;this.updateIsActive=new Date,null===(e=this.HTMLElement)?void 0:e.remove();const t=document.querySelector(this.selector);t?this.HTMLElement=t:(this.HTMLElement=document.createElement("div"),this.HTMLElement.className=this.selector.replace(".",""),document.body.appendChild(this.HTMLElement)),this.#v(this.HTMLElement)}destroy(){var e,t,a;null===(e=this.HTMLElement) || e.remove(),this.input=!1,null===(t=this.HTMLInputElement)?void 0:t.removeEventListener("click",this.actions.changeToInput),null===(a=this.HTMLInputElement)?void 0:a.removeEventListener("change",this.actions.selectDate)}get.date(){return JSON.parse(JSON.stringify(this.settings.selected))}set.date(e){this.settings.selected.dates=e.dates,this.settings.selected.month=e.month,this.settings.selected.year=e.year,this.update()}get.selectedDates(){return this.settings.selected.dates.map((e=>L.write(e)))}get.jumpDate(){var e;return d(this.settings.selected.month)&&d(this.settings.selected.year)?this.settings.selected.dates[this.settings.selected.dates.length-1]:L.write(null===(e=new Date(this.settings.selected.year,this.settings.selected.month))?void 0:e.setDate(1))}}window.VanillaJsCalendar=P}();
-    </script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const streakElements = document.querySelectorAll('.habit-streak[data-habit-id]');
+        streakElements.forEach(element => {
+            let calendarInstance = null;
+            element.addEventListener('mouseover', () => {
+                if (calendarInstance) return;
+                const habitId = element.getAttribute('data-habit-id');
+                const calendarContainer = element.querySelector('.vanilla-js-calendar');
+                const popup = element.querySelector('.calendar-popup');
+                if (popup) popup.classList.add('visible');
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const streakElements = document.querySelectorAll('.habit-streak[data-habit-id]');
-            // Define modal elements if they exist
-            const modal = document.getElementById('calendarModal');
-            const modalCalendar = document.getElementById('modalCalendar');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalClose = document.getElementById('modalClose');
-
-            streakElements.forEach(element => {
-                element._miniInstance = null; // Store mini calendar instance
-                element._miniTimeout = null; // Store timeout ID
-
-                // Show mini preview on hover (mouseenter)
-                element.addEventListener('mouseenter', () => {
-                    if (element._miniInstance) return; // Prevent multiple instances
-                    const habitId = element.getAttribute('data-habit-id');
-                    const calendarContainer = element.querySelector('.vanilla-js-calendar');
-                    const popup = element.querySelector('.calendar-popup');
-
-                    // Debounce to avoid rapid re-fetching
-                    element._miniTimeout = setTimeout(() => {
-                        if (popup) popup.classList.add('visible'); // Make popup visible
-
-                        // Force reflow
-                        const _ = popup && popup.offsetHeight;
-
-                        fetch(`/api/habits/${habitId}/logs`)
-                            .then(response => response.ok ? response.json() : [])
-                            .then(dates => {
-                                dates = Array.isArray(dates) ? dates : [];
-                                try {
-                                    element._miniInstance = new VanillaJsCalendar(calendarContainer, {
-                                        // Correct options format for this library version
-                                        settings: {
-                                            selected: { dates: dates },
-                                            visibility: { daysOutside: false, monthShort: true }
-                                            // Removed theme for simplicity, default should work
-                                        }
-                                    });
-                                } catch (e) {
-                                    console.error('Mini calendar init failed:', e);
-                                }
-                            })
-                            .catch(error => console.error('Failed to load mini calendar:', error));
-                    }, 60); // Small delay
-                });
-
-                // Destroy mini calendar on mouseleave
-                element.addEventListener('mouseleave', () => {
-                    clearTimeout(element._miniTimeout); // Clear any pending timeout
-                    const calendarContainer = element.querySelector('.vanilla-js-calendar');
-                    const popup = element.querySelector('.calendar-popup');
-                    if (popup) popup.classList.remove('visible'); // Hide popup
-                    if (element._miniInstance && calendarContainer) {
-                        try { calendarContainer.innerHTML = ''; } catch (e) { /* ignore */ }
-                        element._miniInstance = null; // Clear instance
-                    }
-                });
-
-                 // Click opens the modal with full calendar (If modal exists)
-                if (modal && modalCalendar && modalTitle && modalClose) {
-                    element.addEventListener('click', () => {
-                        const habitId = element.getAttribute('data-habit-id');
-                        const habitName = element.querySelector('strong') ? element.querySelector('strong').innerText : 'Habit';
-                        modalTitle.textContent = habitName + ' — Completion calendar';
-
-                        modal.setAttribute('aria-hidden', 'false');
-                        modal.classList.add('active');
-                        modalCalendar.innerHTML = ''; // Clear previous
-
-                        fetch(`/api/habits/${habitId}/logs`)
-                            .then(response => response.ok ? response.json() : [])
-                            .then(dates => {
-                                dates = Array.isArray(dates) ? dates : [];
-                                // Delay to allow modal layout
-                                setTimeout(() => {
-                                    try {
-                                        modal._instance = new VanillaJsCalendar(modalCalendar, {
-                                            settings: {
-                                                 selected: { dates: dates },
-                                                 visibility: { daysOutside: true, monthShort: false }
-                                                 // Define theme explicitly if needed
-                                            }
-                                        });
-                                    } catch (e) {
-                                        console.error('Modal calendar init failed:', e);
-                                    }
-                                }, 80);
-                            })
-                            .catch(error => console.error('Failed to load modal calendar:', error));
-                    });
+                fetch(`/api/habits/${habitId}/logs`)
+                    .then(response => response.ok ? response.json() : [])
+                    .then(dates => {
+                        dates = Array.isArray(dates) ? dates : [];
+                        try {
+                            calendarInstance = new VanillaJsCalendar(calendarContainer, {
+                                settings: { selected: { dates: dates }, visibility: { daysOutside: false, monthShort: true } }
+                            });
+                        } catch(e) { console.error("Error init calendar", e); }
+                    })
+                    .catch(error => console.error('Error fetching calendar data:', error));
+            });
+            element.addEventListener('mouseleave', () => {
+                const popup = element.querySelector('.calendar-popup');
+                const calendarContainer = element.querySelector('.vanilla-js-calendar');
+                if (popup) popup.classList.remove('visible');
+                if (calendarInstance && calendarContainer) {
+                    try { calendarContainer.innerHTML = ''; } catch(e) {}
+                    calendarInstance = null;
                 }
             });
-
-            // Modal close handlers (If modal exists)
-            if (modal && modalCalendar && modalClose) {
-                const closeModal = () => {
-                    modal.classList.remove('active');
-                    modal.setAttribute('aria-hidden', 'true');
-                    if (modal._instance && modalCalendar) {
-                        try { modalCalendar.innerHTML = ''; } catch (e) {}
-                        modal._instance = null;
-                    }
-                };
-                modalClose.addEventListener('click', closeModal);
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) { // Click outside the content
-                        closeModal();
-                    }
-                });
-            }
         });
-    </script>
+    });
+</script>
+<script src="https://unpkg.com/feather-icons"></script>
+<script> feather.replace(); </script>
 </body>
 </html>
