@@ -9,147 +9,276 @@
         body { padding-top: 70px; }
         nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
         .habit-streak { position: relative; cursor: pointer; overflow: visible; }
-        .calendar-popup { display: none; position: absolute; bottom: 125%; right: 0; background: var(--card-background-color); border: 1px solid var(--card-border-color); border-radius: var(--border-radius); box-shadow: var(--card-box-shadow); z-index: 1001; padding: 0.4rem; }
-        .vanilla-js-calendar { min-width: 220px; min-height: 180px; }
-        .habit-streak .calendar-popup { display: none; }
+        .calendar-popup { 
+            display: none; 
+            position: absolute; 
+            bottom: auto;
+            top: 100%;
+            right: 0; 
+            background: var(--card-background-color); 
+            border: 1px solid var(--card-border-color); 
+            border-radius: var(--border-radius); 
+            box-shadow: var(--card-box-shadow); 
+            z-index: 1001; 
+            padding: 0.4rem;
+            margin-top: 0.5rem;
+        }
+        .vanilla-js-calendar { min-width: 180px; min-height: 140px; }
         .habit-streak .calendar-popup.visible { display: block; }
-        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
-        .icon-button { padding: 0.5rem 0.75rem; } /* Smaller padding for icon-only buttons */
-        .daily-streak-card { text-align: center; }
-        .habit-actions form { margin-left: 0.5rem; }
-        nav details[role="list"] { width: auto; }
-        nav details[role="list"] summary { padding: 0.5rem; }
-        nav details[role="list"] ul { white-space: nowrap; }
-        /* Flash message styles */
-        .success-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
-        .info-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
-        .error-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
+
+        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-backdrop.active { display: flex; }
+        .modal-calendar-container { background: var(--card-background-color); padding: 1rem; border-radius: 8px; max-width: 900px; width: 95%; max-height: 90vh; overflow: auto; }
+        .modal-close { float: right; border: none; background: transparent; font-size: 1.25rem; cursor: pointer; }
     </style>
 </head>
 <body>
 <main class="container">
     <nav>
         <ul>
-            <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
+            <li><strong>Habit Tracker</strong></li>
         </ul>
         <ul>
-            <li><a href="/dashboard" role="button" class="contrast outline"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
-            <li><a href="/explore" class="secondary outline"><i data-feather="search" class="icon"></i>Explore</a></li>
-            <li><a href="/friends" class="secondary outline"><i data-feather="users" class="icon"></i>Friends</a></li>
-            <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
-            <li>
+            <li><a href="/dashboard" role="button">Dashboard</a></li>
+            <li><a href="/explore">Explore</a></li>
+            <li><a href="/friends">Friends</a></li>
+            <li><a href="/account">My Account</a></li>
+            <li th:if="${!#lists.isEmpty(unreadNotifications)}">
                 <details role="list" dir="rtl">
-                    <summary aria-haspopup="listbox" role="button" class="secondary outline icon-button">
-                        <i data-feather="bell"></i>
-                        <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
+                    <summary aria-haspopup="listbox" role="button">
+                        <span>🔔 Notification Panel (<span th:text="${#lists.size(unreadNotifications)}"></span>)</span>
                     </summary>
                     <ul role="listbox">
-                        <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
                         <li th:each="notification : ${unreadNotifications}">
-                           <a th:href="${notification.link}" style="display: flex; align-items: center;">
-                               <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
-                               <span th:text="${notification.message}"></span>
-                           </a>
+                            <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" 
+                            th:text="${notification.message}"></a>
                         </li>
                     </ul>
                 </details>
             </li>
-             <li>
-                <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
-                    <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
-                </form>
-            </li>
         </ul>
     </nav>
 
-    <div style="margin-top: 1rem;">
-         <div th:if="${success}" role="alert" class="success-flash" th:text="${success}"></div>
-         <div th:if="${info}" role="alert" class="info-flash" th:text="${info}"></div>
-         <div th:if="${error}" role="alert" class="error-flash" th:text="${error}"></div>
-    </div>
+    <div style="margin-top: 5rem;">
+         <div th:if="${success}" role="status" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; background: var(--success-color, #43a047); color: white;" th:text="${success}"></div>
+         <div th:if="${info}" role="status" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; background: var(--muted-color, #757575); color: white;" th:text="${info}"></div>
+         <div th:if="${error}" role="alert" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; background: var(--error-color, #d83a52); color: white;" th:text="${error}"></div>
+     </div>
 
-    <div class="grid">
-        <article class="daily-streak-card">
-            <h3><i data-feather="zap" class="icon"></i>Daily Streak</h3>
-            <h1 style="margin: 0;" th:text="${dailyStreak} + ' Days 🔥'">0 Days 🔥</h1>
-            <small>Complete one habit daily</small>
-        </article>
-        <article>
-            <h2><i data-feather="plus-circle" class="icon"></i>Add New Habit</h2>
-            <form th:action="@{/habits}" th:object="${newHabit}" method="post">
-                <input type="text" th:field="*{name}" placeholder="Habit name (e.g., Read for 15 mins)" required>
-                <input type="text" th:field="*{description}" placeholder="Description (optional)">
-                <button type="submit"><i data-feather="plus" class="icon"></i>Add Habit</button>
-            </form>
-        </article>
-    </div>
+    <article style="text-align: center; margin-bottom: 2rem;">
+        <h3>Your Daily Streak</h3>
+        <h1 style="margin: 0;" th:text="${dailyStreak != null ? dailyStreak : 0} + ' Days 🔥'">0 Days 🔥</h1>
+        <small>Complete at least one habit every day to keep it going!</small>
+    </article>
 
-    <h2 style="margin-top: 2rem;"><i data-feather="list" class="icon"></i>My Habits</h2>
+    <h1>Your Dashboard</h1>
+
+    <article class="add-habit-form">
+        <h2>Add a New Habit</h2>
+        <form th:action="@{/habits}" th:object="${newHabit}" method="post">
+            <input type="text" th:field="*{name}" placeholder="Habit name (e.g., Read for 15 mins)" required>
+            <input type="text" th:field="*{description}" placeholder="Description (optional)">
+            <button type="submit">Add Habit</button>
+        </form>
+    </article>
+
+    <h2>My Habits</h2>
     <div th:if="${#lists.isEmpty(habits)}">
         <p>You haven't added any habits yet. Add one above to get started!</p>
     </div>
     <div th:unless="${#lists.isEmpty(habits)}">
-        <article th:each="habit : ${habits}" style="margin-bottom: 1rem;">
-             <div style="display: flex; justify-content: space-between; align-items: center;">
-                 <div>
-                     <strong th:text="${habit.name}">Habit Name</strong>
-                     <p th:text="${habit.description}" style="margin: 5px 0 0 0; color: var(--pico-muted-color);">Description</p>
-                 </div>
-                 <div style="display: flex; align-items: center;" class="habit-actions">
-                     <div class="habit-streak" th:attr="data-habit-id=${habit.id}">
-                         <span th:text="'Streak: ' + ${streaks.get(habit.id)} + ' 🔥'" style="font-weight: bold; margin-right: 1rem;"></span>
-                         <div class="calendar-popup">
-                             <div class="vanilla-js-calendar"></div>
-                         </div>
-                     </div>
-                     <form th:action="@{/habits/{id}/log(id=${habit.id})}" method="post" style="display: inline-block;">
-                         <button type="submit" class="outline icon-button" title="Log Completion"><i data-feather="check"></i></button>
-                     </form>
-                     </div>
-             </div>
-         </article>
+        <div th:each="habit : ${habits}" class="habit-item">
+            <article>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong th:text="${habit.name}">Habit Name</strong>
+                        <p th:text="${habit.description}" style="margin: 5px 0 0 0; color: var(--muted-color);">Description</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="habit-streak" th:attr="data-habit-id=${habit.id}" th:title="'Click to view ' + ${habit.name} + ' calendar'">
+                            <span th:text="'Streak: ' + (${streaks.get(habit.id) != null ? streaks.get(habit.id) : 0}) + ' 🔥'" style="font-weight: bold;"></span>
+                            <div class="calendar-popup">
+                                <div class="vanilla-js-calendar"></div>
+                            </div>
+                        </div>
+                        <form th:action="@{/habits/{id}/log(id=${habit.id})}" method="post" style="display: inline-block;">
+                            <button type="submit">Log Completion</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+        </div>
     </div>
 
+    <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit" class="secondary">Logout</button>
+    </form>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.6.5/build/vanilla-js-calendar.min.js"></script>
+<div id="calendarModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-calendar-container" role="document">
+        <button id="modalClose" class="modal-close" aria-label="Close calendar">✕</button>
+        <h3 id="modalTitle">Habit Calendar</h3>
+        <div id="modalCalendar" style="margin-top: 1rem;"></div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-js-calendar/1.6.5/vanilla-js-calendar.min.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const streakElements = document.querySelectorAll('.habit-streak[data-habit-id]');
+        const modal = document.getElementById('calendarModal');
+        const modalCalendar = document.getElementById('modalCalendar');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalClose = document.getElementById('modalClose');
+
+        if (!modal || !modalCalendar || !modalTitle || !modalClose) {
+            console.warn('Modal elements not found. Calendar modal functionality disabled.');
+        }
+
         streakElements.forEach(element => {
-            let calendarInstance = null;
-            element.addEventListener('mouseover', () => {
-                if (calendarInstance) return;
+            element._miniInstance = null;
+            element._miniTimeout = null;
+
+            // Show mini preview on hover
+            element.addEventListener('mouseenter', () => {
+                if (element._miniInstance) return;
+
                 const habitId = element.getAttribute('data-habit-id');
                 const calendarContainer = element.querySelector('.vanilla-js-calendar');
                 const popup = element.querySelector('.calendar-popup');
-                if (popup) popup.classList.add('visible');
 
-                fetch(`/api/habits/${habitId}/logs`)
-                    .then(response => response.ok ? response.json() : [])
-                    .then(dates => {
-                        dates = Array.isArray(dates) ? dates : [];
-                        try {
-                            calendarInstance = new VanillaJsCalendar(calendarContainer, {
-                                settings: { selected: { dates: dates }, visibility: { daysOutside: false, monthShort: true } }
-                            });
-                        } catch(e) { console.error("Error init calendar", e); }
-                    })
-                    .catch(error => console.error('Error fetching calendar data:', error));
+                if (!calendarContainer || !popup) {
+                    console.warn('Calendar container or popup not found for habit:', habitId);
+                    return;
+                }
+
+                element._miniTimeout = setTimeout(() => {
+                    try {
+                        popup.classList.add('visible');
+                        const _ = popup.offsetHeight;
+
+                        fetch(`/api/habits/${habitId}/logs`)
+                            .then(response => {
+                                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                                return response.json();
+                            })
+                            .then(dates => {
+                                dates = Array.isArray(dates) ? dates : [];
+                                if (!window.VanillaJsCalendar) {
+                                    console.error('VanillaJsCalendar library not loaded');
+                                    return;
+                                }
+                                element._miniInstance = new window.VanillaJsCalendar(calendarContainer, {
+                                    settings: {
+                                        selected: { dates: dates },
+                                        visibility: { daysOutside: false, monthShort: true }
+                                    }
+                                });
+                            })
+                            .catch(error => console.error(`Failed to load mini calendar for habit ${habitId}:`, error));
+                    } catch (e) {
+                        console.error('Mini calendar initialization error:', e);
+                    }
+                }, 60);
             });
+
+            // Hide and cleanup mini calendar on mouseleave
             element.addEventListener('mouseleave', () => {
+                clearTimeout(element._miniTimeout);
                 const popup = element.querySelector('.calendar-popup');
                 const calendarContainer = element.querySelector('.vanilla-js-calendar');
-                if (popup) popup.classList.remove('visible');
-                if (calendarInstance && calendarContainer) {
-                    try { calendarContainer.innerHTML = ''; } catch(e) {}
-                    calendarInstance = null;
+
+                if (popup) {
+                    popup.classList.remove('visible');
+                }
+
+                if (element._miniInstance && calendarContainer) {
+                    try {
+                        calendarContainer.innerHTML = '';
+                    } catch (e) {
+                        console.error('Error clearing mini calendar:', e);
+                    }
+                    element._miniInstance = null;
                 }
             });
+
+            // Click to open full modal calendar
+            element.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                if (!modal || !modalCalendar) {
+                    console.warn('Modal elements not available');
+                    return;
+                }
+
+                const habitId = element.getAttribute('data-habit-id');
+                const habitNameEl = element.querySelector('strong');
+                const habitName = habitNameEl ? habitNameEl.textContent : 'Habit';
+
+                modalTitle.textContent = `${habitName} — Completion Calendar`;
+                modal.setAttribute('aria-hidden', 'false');
+                modal.classList.add('active');
+                modalCalendar.innerHTML = '';
+
+                fetch(`/api/habits/${habitId}/logs`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.json();
+                    })
+                    .then(dates => {
+                        dates = Array.isArray(dates) ? dates : [];
+                        setTimeout(() => {
+                            try {
+                                if (!window.VanillaJsCalendar) {
+                                    console.error('VanillaJsCalendar library not loaded');
+                                    return;
+                                }
+                                modal._instance = new window.VanillaJsCalendar(modalCalendar, {
+                                    settings: {
+                                        selected: { dates: dates },
+                                        visibility: { daysOutside: true, monthShort: false }
+                                    }
+                                });
+                            } catch (e) {
+                                console.error('Modal calendar initialization error:', e);
+                            }
+                        }, 80);
+                    })
+                    .catch(error => console.error(`Failed to load modal calendar for habit ${habitId}:`, error));
+            });
         });
+
+        // Modal close handlers
+        if (modal && modalClose) {
+            const closeModal = () => {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+                if (modal._instance && modalCalendar) {
+                    try {
+                        modalCalendar.innerHTML = '';
+                    } catch (e) {
+                        console.error('Error clearing modal calendar:', e);
+                    }
+                    modal._instance = null;
+                }
+            };
+
+            modalClose.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+        }
     });
 </script>
-<script src="https://unpkg.com/feather-icons"></script>
-<script> feather.replace(); </script>
 </body>
 </html>
