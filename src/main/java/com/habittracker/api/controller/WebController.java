@@ -113,7 +113,7 @@ public class WebController {
         String uniqueId = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 7);
         user.setUniqueUserId(uniqueId);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setEnabled(true);
+        user.setEnabled(false);
         user.setTwoFactorEnabled(false);
         userRepository.save(user);
 
@@ -280,6 +280,7 @@ public class WebController {
         model.addAttribute("habits", habits);
         model.addAttribute("streaks", streaks);
         model.addAttribute("newHabit", new Habit());
+       
         return "dashboard";
     }
 

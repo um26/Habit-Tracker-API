@@ -42,21 +42,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable()) // Disable CSRF for H2 console
+            .headers(headers -> headers.frameOptions(frame -> frame.disable())) // Allow frames for H2 console
             .authorizeHttpRequests(auth -> auth
-                // Public URLs that don't require authentication
+                // Public URLs
                 .requestMatchers(
                     "/",
                     "/login",
                     "/register",
-                    "/verify-email",           // MUST be public
+                    "/verify-email",
                     "/registration-success",
-                    "/setup-2fa",              // Allow access before login if needed
-                    "/verify-2fa",             // Allow access for 2FA verification
+                    "/setup-2fa",
+                    "/verify-2fa",
                     "/css/**",
                     "/js/**",
                     "/images/**",
-                    "/static/**"
+                    "/static/**",
+                    "/h2-console/**"  // H2 console allowed
                 ).permitAll()
                 // All other requests require authentication
                 .anyRequest().authenticated()
@@ -74,4 +76,5 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 }
