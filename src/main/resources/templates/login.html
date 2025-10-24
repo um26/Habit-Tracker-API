@@ -7,11 +7,14 @@
     <style>
         body { font-family: sans-serif; max-width: 500px; margin: 50px auto; }
         form { display: flex; flex-direction: column; gap: 10px; }
-        input { padding: 8px; }
         button { padding: 10px; color: white; border: none; cursor: pointer; }
         .error { color: var(--pico-color-red-500); }
         a { color: var(--pico-primary); }
         .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid; border-radius: 4px; }
+        .success-flash { border-color: var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
+        .error-flash { border-color: var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
+        .info-flash { border-color: var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
     </style>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
@@ -19,11 +22,12 @@
     <main class="container">
         <h1><i data-feather="log-in" class="icon"></i>Login</h1>
 
-        <div th:if="${success}" role="status" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 1rem; background: var(--pico-color-green-100); color: var(--pico-color-green-700); border-left: 5px solid var(--pico-color-green-500);" th:text="${success}"></div>
-        <div th:if="${param.error}" class="error" style="margin-bottom: 10px;">
+        <div th:if="${success}" role="alert" class="flash success-flash" th:text="${success}"></div>
+        <div th:if="${error}" role="alert" class="flash error-flash" th:text="${error}"></div>
+        <div th:if="${param.error}" role="alert" class="flash error-flash">
             Invalid email or password.
         </div>
-        <div th:if="${param.logout}" style="color: #17a2b8; margin-bottom: 10px;">
+        <div th:if="${param.logout}" role="alert" class="flash info-flash">
             You have been logged out successfully.
         </div>
 
@@ -36,9 +40,7 @@
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-
             <div class="cf-turnstile" th:attr="data-sitekey=${turnstileSiteKey}"></div>
-
             <div>
                 <button type="submit" style="background-color: var(--pico-color-green-500);"><i data-feather="check" class="icon"></i>Log In</button>
             </div>

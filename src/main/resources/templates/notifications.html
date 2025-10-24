@@ -9,21 +9,20 @@
         nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
         .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
         .icon-button { padding: 0.5rem 0.75rem; }
-        .notification-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--card-border-color); margin-bottom: 0.5rem; border-radius: var(--border-radius); transition: background-color 0.2s; }
-        .notification-card.read { opacity: 0.7; background: var(--card-background-color); }
-        .notification-card:hover { background: var(--card-hover-color); }
+        .notification-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--card-border-color); margin-bottom: 0.5rem; border-radius: var(--border-radius); transition: background-color 0.2s; text-decoration: none; color: var(--pico-color); }
+        .notification-card.read { opacity: 0.7; background: var(--pico-secondary-background); }
+        .notification-card:hover { background: var(--pico-card-hover-background-color); }
         .notification-meta { display: flex; flex-direction: column; gap: 0.3rem; }
-        .notification-time { font-size: 0.8em; color: var(--muted-color); }
+        .notification-time { font-size: 0.8em; color: var(--pico-muted-color); }
         .filters { display: flex; gap: 1rem; margin-bottom: 1rem; }
         .filters a { text-decoration: none; }
-        .filters a.active { color: var(--primary); font-weight: bold; }
+        .pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem; }
+        .pagination a { text-decoration: none; padding: 0.5rem 1rem; border: 1px solid var(--pico-form-element-border-color); border-radius: var(--pico-border-radius); }
+        .pagination a.active { background: var(--pico-primary); color: var(--pico-primary-inverse); }
         /* Flash message styles */
         .success-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
         .info-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
         .error-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
-        .pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem; }
-        .pagination a { text-decoration: none; padding: 0.5rem 1rem; border: 1px solid var(--card-border-color); border-radius: var(--border-radius); }
-        .pagination a.active { background: var(--primary); color: var(--primary-inverse); }
     </style>
 </head>
 <body>
@@ -38,12 +37,12 @@
                 <li><a href="/friends" class="secondary outline"><i data-feather="users" class="icon"></i>Friends</a></li>
                 <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
                 <li>
-                    <a href="/notifications" role="button" class="contrast outline">
+                    <a href="/notifications" role="button" class="contrast outline icon-button">
                         <i data-feather="bell"></i>
                         <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
                     </a>
                 </li>
-                <li>
+                 <li>
                     <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
                         <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
                     </form>
@@ -53,16 +52,17 @@
 
         <h1><i data-feather="bell" class="icon"></i>Your Notifications</h1>
 
-        <!-- Filters -->
         <div class="filters" role="group">
-            <a th:href="@{/notifications}" th:class="${filter == null} ? 'active' : ''" role="button" class="outline">All</a>
-            <a th:href="@{/notifications?filter=unread}" th:class="${filter == 'unread'} ? 'active' : ''" role="button" class="outline">Unread</a>
-            <a th:href="@{/notifications?filter=read}" th:class="${filter == 'read'} ? 'active' : ''" role="button" class="outline">Read</a>
+            <a th:href="@{/notifications}" th:classappend="${filter == null} ? 'contrast' : 'secondary outline'" role="button">All</a>
+            <a th:href="@{/notifications(filter='unread')}" th:classappend="${filter == 'unread'} ? 'contrast' : 'secondary outline'" role="button">Unread</a>
+            <a th:href="@{/notifications(filter='read')}" th:classappend="${filter == 'read'} ? 'contrast' : 'secondary outline'" role="button">Read</a>
         </div>
 
-        <div th:if="${success}" role="alert" class="success-flash" th:text="${success}"></div>
-        <div th:if="${info}" role="alert" class="info-flash" th:text="${info}"></div>
-        <div th:if="${error}" role="alert" class="error-flash" th:text="${error}"></div>
+        <div style="margin-top: 1rem;">
+             <div th:if="${success}" role="alert" class="success-flash" th:text="${success}"></div>
+             <div th:if="${info}" role="alert" class="info-flash" th:text="${info}"></div>
+             <div th:if="${error}" role="alert" class="error-flash" th:text="${error}"></div>
+         </div>
 
         <div th:if="${notifications.empty}">
             <article>
@@ -71,24 +71,23 @@
         </div>
 
         <div th:unless="${notifications.empty}">
-            <!-- Notifications List -->
             <div th:each="notification : ${notifications}">
-                <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" class="notification-card" th:classappend="${notification.read} ? 'read'">
+                <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" class="notification-card" th:classappend="${notification.isRead()} ? 'read'">
                     <div class="notification-meta">
-                        <span th:text="${notification.message}">Notification Message</span>
-                        <small class="notification-time" th:text="${#temporals.format(notification.createdAt, 'MMM dd, yyyy HH:mm')}">Time</small>
+                        <span><i data-feather="message-square" class="icon"></i><span th:text="${notification.message}"></span></span>
+                        <small class="notification-time" th:if="${notification.createdAt != null}" th:text="${#temporals.format(notification.createdAt, 'MMM dd, yyyY HH:mm')}">Time</small>
                     </div>
                     <i data-feather="chevron-right"></i>
                 </a>
             </div>
 
-            <!-- Pagination -->
             <div class="pagination" th:if="${totalPages > 1}">
                 <a th:if="${currentPage > 1}" th:href="@{/notifications(page=${currentPage - 1}, filter=${filter})}">Previous</a>
-                <a th:each="pageNum : ${#numbers.sequence(1, totalPages)}"
-                   th:href="@{/notifications(page=${pageNum}, filter=${filter})}"
-                   th:text="${pageNum}"
-                   th:class="${pageNum == currentPage} ? 'active'"></a>
+                <span th:each="pageNum : ${#numbers.sequence(1, totalPages)}">
+                    <a th:href="@{/notifications(page=${pageNum}, filter=${filter})}"
+                       th:text="${pageNum}"
+                       th:classappend="${pageNum == currentPage} ? 'contrast' : 'secondary outline'"></a>
+                </span>
                 <a th:if="${currentPage < totalPages}" th:href="@{/notifications(page=${currentPage + 1}, filter=${filter})}">Next</a>
             </div>
         </div>

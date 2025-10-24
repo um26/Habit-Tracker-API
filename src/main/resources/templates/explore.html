@@ -13,6 +13,8 @@
         .success-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
         .info-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
         .error-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
+         /* Result item styling */
+        .result-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--pico-form-element-border-color); border-radius: var(--pico-border-radius); }
     </style>
 </head>
 <body>
@@ -35,11 +37,12 @@
                          <ul role="listbox">
                             <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
                             <li th:each="notification : ${unreadNotifications}">
-                               <a th:href="${notification.link}" style="display: flex; align-items: center;">
+                               <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" style="display: flex; align-items: center;">
                                    <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
                                    <span th:text="${notification.message}"></span>
                                </a>
                             </li>
+                            <li th:if="${!#lists.isEmpty(unreadNotifications)}"><hr><a href="/notifications">View All</a></li>
                          </ul>
                     </details>
                 </li>
@@ -68,7 +71,7 @@
                 <p>No users found matching your query.</p>
             </div>
             <article th:unless="${users.isEmpty()}">
-                <div th:each="user : ${users}" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.5rem;">
+                 <div th:each="user : ${users}" class="result-item">
                     <span><i data-feather="user" class="icon"></i><strong th:text="${user.username}">User</strong></span>
 
                     <div th:switch="${friendStatus.get(user.uniqueUserId)}">
@@ -76,11 +79,11 @@
                             <input type="hidden" name="friendId" th:value="${user.uniqueUserId}" />
                             <button type="submit" class="outline"><i data-feather="user-plus" class="icon"></i>Send Request</button>
                         </form>
-                        <span th:case="'PENDING_SENT'" class="secondary"><i>Request Sent</i></span>
-                         <a th:case="'PENDING_RECEIVED'" href="/friends" role="button" class="contrast outline"><i>Request Received</i></a>
-                        <span th:case="'FRIENDS'" class="secondary"><i data-feather="check" class="icon"></i>Friends</span>
+                        <span th:case="'PENDING_SENT'" class="secondary"><i><i data-feather="clock" class="icon"></i>Request Sent</i></span>
+                         <a th:case="'PENDING_RECEIVED'" href="/friends" role="button" class="contrast outline"><i data-feather="gift" class="icon"></i>Request Received</a>
+                        <span th:case="'FRIENDS'" class="secondary"><i><i data-feather="check" class="icon"></i>Friends</i></span>
                     </div>
-                </div>
+                 </div>
             </article>
         </div>
 

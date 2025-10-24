@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Challenge</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body { padding-top: 70px; }
+        nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .icon-button { padding: 0.5rem 0.75rem; }
+    </style>
+</head>
+<body>
+<main class="container">
+    <nav>
+        </nav>
+
+    <h1><i data-feather="shield" class="icon"></i>Create a New Challenge</h1>
+    <p>Create a collaborative room to track a habit with your friends.</p>
+
+    <article>
+        <form id="create-challenge-form">
+            <label for="challenge-name">Challenge Name (Daily Goals)</label>
+            <input type="text" id="challenge-name" name="challengeName" placeholder="e.g., 30-Day Jogging Goal" required>
+            
+            <label for="challenge-desc">Description (Habit Description)</label>
+            <input type="text" id="challenge-desc" name="challengeDesc" placeholder="Description for the challenge" required>
+
+            <label for="habitId">Select a Habit to Track (Habit ID)</label>
+            <div th:if="${#lists.isEmpty(userHabits)}">
+                <p>You must <a href="/dashboard">create a personal habit</a> first.</p>
+            </div>
+            <select id="habitId" name="habitId" required th:unless="${#lists.isEmpty(userHabits)}">
+                <option value="" disabled selected>Choose one of your habits...</option>
+                <option th:each="habit : ${userHabits}" th:value="${habit.id}" th:text="${habit.name}"></option>
+            </select>
+            
+            <button type="submit" id="create-room-btn" th:disabled="${#lists.isEmpty(userHabits)}">
+                Create Challenge Room (via WebSocket)
+            </button>
+        </form>
+        <small id="ws-status" style="color: var(--pico-muted-color);">Connecting to server...</small>
+    </article>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script> feather.replace(); </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('create-challenge-form');
+        const statusElement = document.getElementById('ws-status');
+        const createButton = document.getElementById('create-room-btn');
+        
+        let stompClient = null;
+
+        function connect() {
+            const socket = new SockJS('/ws'); // Connect to our backend WebSocket endpoint
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, (frame) => {
+                console.log('Connected: ' + frame);
+                statusElement.textContent = 'Connected to server. Ready to create room.';
+                statusElement.style.color = 'var(--pico-color-green-500)';
+                createButton.disabled = false; // Enable button on connect
+            }, (error) => {
+                console.error('Connection error: ' + error);
+                statusElement.textContent = 'Connection error. Please refresh.';
+                statusElement.style.color = 'var(--pico-color-red-500)';
+            });
+        }
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault(); // Stop the form from submitting normally
+            
+            if (!stompClient || !stompClient.connected) {
+                alert('Not connected to the server. Please wait.');
+                return;
+            }
+
+            // Get data from the form
+            const challengeName = document.getElementById('challenge-name').value;
+            const description = document.getElementById('challenge-desc').value;
+            const habitId = document.getElementById('habitId').value;
+            
+            // This is the data your friend asked for
+            // We map our form fields to their requested names
+            const payload = {
+                habitId: habitId,
+                habitDescription: description, // Mapped from "challenge-desc"
+                dailyGoals: challengeName,     // Mapped from "challenge-name"
+                // "Created at" and "User" are typically set by the backend, not sent from the client
+            };
+
+            // Send the data over the WebSocket
+            // The friend's backend MUST be listening on "/app/challenge/create"
+            stompClient.send('/app/challenge/create', {}, JSON.stringify(payload));
+            
+            statusElement.textContent = `Sent create request for '${challengeName}'! Waiting for response...`;
+            
+            // We can also subscribe to a response topic
+            // This is just an example, the friend's backend needs to send to this topic
+            stompClient.subscribe('/user/queue/reply', (message) => {
+                 const response = JSON.parse(message.body);
+                 if(response.success) {
+                    alert('Challenge created successfully! Redirecting...');
+                    // Redirect to the new room page (assuming backend sends back the new room ID)
+                    // window.location.href = `/challenge/${response.roomId}`;
+                 } else {
+                    alert('Failed to create challenge: ' + response.error);
+                 }
+            });
+        });
+
+        // Initial connection
+        if(!createButton.disabled) {
+           connect();
+        }
+    });
+</script>
+</body>
+</html>

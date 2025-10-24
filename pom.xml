@@ -41,6 +41,10 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <dependency>
             <groupId>dev.samstevens.totp</groupId>
             <artifactId>totp-spring-boot-starter</artifactId>
             <version>1.7.1</version>
@@ -57,7 +61,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
+            <version>42.7.3</version>
         </dependency>
         <!-- H2 removed: project uses Neon/Postgres only. If you need H2 for fast local testing, add it back as a test/runtime dependency. -->
         <dependency>

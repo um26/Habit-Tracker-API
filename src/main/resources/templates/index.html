@@ -1,24 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Habit Tracker</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 100px; padding: 2rem; }
-        nav a { margin: 0 15px; text-decoration: none; font-size: 1.2em; }
-        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: var(--pico-secondary-background); }
+        main.container { max-width: 600px; padding: 2rem; text-align: center; }
+        .icon { vertical-align: middle; width: 1.2em; height: 1.2em; margin-right: 0.4em; }
+        nav { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
     </style>
 </head>
 <body>
     <main class="container">
         <article>
-            <h1><i data-feather="check-circle" class="icon"></i>Welcome to Your Habit Tracker!</h1>
-            <p>Your journey to building better habits starts here.</p>
+            <header>
+                <h1><i data-feather="check-circle" class="icon"></i>Welcome to Habit Tracker</h1>
+            </header>
+            <p>Your new companion for building better habits and achieving your goals with friends.</p>
             <footer>
                 <nav>
                     <a href="/login" role="button" class="contrast"><i data-feather="log-in" class="icon"></i>Login</a>
-                    <a href="/register" role="button"><i data-feather="user-plus" class="icon"></i>Register</a>
+                    <a href="/register" role="button" class="secondary"><i data-feather="user-plus" class="icon"></i>Register</a>
                 </nav>
             </footer>
         </article>

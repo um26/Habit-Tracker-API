@@ -7,52 +7,60 @@
     <style>
         body { font-family: sans-serif; max-width: 500px; margin: 50px auto; }
         form { display: flex; flex-direction: column; gap: 10px; }
-        input { padding: 8px; }
-        button { padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; }
-        a { color: #007bff; }
-        small.error { color: #d83a52; margin-top: -5px; margin-bottom: 5px; display: block; }
+        button { padding: 10px; color: white; border: none; cursor: pointer; }
+        a { color: var(--pico-primary); }
+        small.error { color: var(--pico-color-red-500); margin-top: -5px; margin-bottom: 5px; display: block; }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid; border-radius: 4px; }
+        .error-flash { border-color: var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
     </style>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
-    <h1>Create an Account</h1>
+    <main class="container">
+        <h1><i data-feather="user-plus" class="icon"></i>Create an Account</h1>
 
-    <div th:if="${error}" style="color: red; margin-bottom: 10px;" th:text="${error}"></div>
-
-    <form th:action="@{/register}" th:object="${user}" method="post" novalidate>
-        <div>
-            <label for="email">Email:</label>
-            <input type="email" id="email" th:field="*{email}" required
-                   th:aria-invalid="${#fields.hasErrors('email')} ? 'true' : 'false'">
-            <small class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
-        </div>
-        <div>
-            <label for="username">Username:</label>
-            <input type="text" id="username" th:field="*{username}" required
-                   th:aria-invalid="${#fields.hasErrors('username')} ? 'true' : 'false'">
-            <small class="error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
-        </div>
-        <div>
-            <label for="password">Password:</label>
-            <input type="password" id="password" th:field="*{password}" required
-                   th:aria-invalid="${#fields.hasErrors('password')} ? 'true' : 'false'">
-             <small class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
-        </div>
-        <div>
-            <label for="confirmPassword">Confirm Password:</label>
-            <input type="password" id="confirmPassword" name="confirmPassword" required>
+        <div th:if="${error}" role="alert" class="flash error-flash" th:text="${error}"></div>
+        <div th:if="${#fields.hasErrors()}" role="alert" class="flash error-flash">
+            <strong>Please correct the errors below:</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}"></li>
+            </ul>
         </div>
 
-        <div class="cf-turnstile" th:attr="data-sitekey=${turnstileSiteKey}"></div>
-
-        <div>
-            <button type="submit">Register</button>
-        </div>
-    </form>
-    <p>Already have an account? <a href="/login">Login here</a>.</p>
+        <form th:action="@{/register}" th:object="${user}" method="post" novalidate>
+            <div>
+                <label for="email">Email:</label>
+                <input type="email" id="email" th:field="*{email}" required
+                       th:aria-invalid="${#fields.hasErrors('email')} ? 'true' : 'false'">
+                <small class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+            </div>
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" th:field="*{username}" required
+                       th:aria-invalid="${#fields.hasErrors('username')} ? 'true' : 'false'">
+                <small class="error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" th:field="*{password}" required
+                       th:aria-invalid="${#fields.hasErrors('password')} ? 'true' : 'false'">
+                 <small class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
+            </div>
+            <div>
+                <label for="confirmPassword">Confirm Password:</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <div class="cf-turnstile" th:attr="data-sitekey=${turnstileSiteKey}"></div>
+            <div>
+                <button type="submit" style="background-color: var(--pico-primary);"><i data-feather="arrow-right-circle" class="icon"></i>Register</button>
+            </div>
+        </form>
+        <p>Already have an account? <a href="/login">Login here</a>.</p>
+    </main>
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
-        feather.replace(); // Activate the icons
+      feather.replace();
     </script>
 </body>
 </html>

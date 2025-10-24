@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Rooms</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body { padding-top: 70px; }
+        nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .icon-button { padding: 0.5rem 0.75rem; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <nav>
+            <ul>
+                <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
+            </ul>
+            <ul>
+                <li><a href="/dashboard" class="secondary outline"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
+                <li><a href="/explore" class="secondary outline"><i data-feather="search" class="icon"></i>Explore People</a></li>
+                <li><a href="/search-rooms" role="button" class="contrast outline"><i data-feather="grid" class="icon"></i>Search Rooms</a></li>
+                <li><a href="/friends" class="secondary outline"><i data-feather="users" class="icon"></i>Friends</a></li>
+                <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
+                <li>
+                    <details role="list" dir="rtl">
+                        <summary aria-haspopup="listbox" role="button" class="secondary outline icon-button">
+                            <i data-feather="bell"></i>
+                            <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
+                        </summary>
+                        <ul role="listbox">
+                            <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
+                            <li th:each="notification : ${unreadNotifications}">
+                               <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" style="display: flex; align-items: center;">
+                                   <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
+                                   <span th:text="${notification.message}"></span>
+                               </a>
+                            </li>
+                        </ul>
+                    </details>
+                </li>
+                 <li>
+                    <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
+                        <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+
+        <h1><i data-feather="grid" class="icon"></i>Search for Challenge Rooms</h1>
+        <article>
+            <p>This feature is coming soon! You will be able to search for public challenges here.</p>
+            </article>
+    </main>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script> feather.replace(); </script>
+</body>
+</html>

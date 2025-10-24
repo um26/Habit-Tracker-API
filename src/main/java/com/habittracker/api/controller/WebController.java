@@ -21,6 +21,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -45,6 +46,7 @@ public class WebController {
     @Autowired private EmailService emailService;
     @Autowired private TwoFactorAuthenticationService tfaService;
     @Autowired private TurnstileService turnstileService;
+    @Autowired private SimpMessagingTemplate messagingTemplate;
 
     @Value("${app.cutover-hour:0}") private int cutoverHour;
     @Value("${cloudflare.turnstile.siteKey}") private String turnstileSiteKey;
@@ -296,6 +298,22 @@ public class WebController {
                 newLog.setHabit(habit);
                 newLog.setCompletionDate(today);
                 habitLogRepository.save(newLog);
+                
+                // Send WebSocket message for each challenge room this habit is part of
+                if (habit.getChallengeRooms() != null && !habit.getChallengeRooms().isEmpty()) {
+                    for (ChallengeRoom room : habit.getChallengeRooms()) {
+                        HabitCompletionMessage message = new HabitCompletionMessage(
+                            user.getId(),
+                            user.getUsername(),
+                            habitService.calculateCurrentStreak(habitId),
+                            habit.getId(),
+                            habit.getName()
+                        );
+                        messagingTemplate.convertAndSend("/topic/challenge/" + room.getId(), message);
+                        log.info("Sent WebSocket message for habit completion in room {}", room.getId());
+                    }
+                }
+                
                 log.info("Saved new HabitLog id={} for user {} habit={} date={}", newLog.getId(), user.getEmail(), habit.getId(), newLog.getCompletionDate());
                 redirectAttributes.addFlashAttribute("success", "Logged habit completion for " + today);
             }
@@ -312,6 +330,13 @@ public class WebController {
         if (user == null) return "redirect:/login?error";
         model.addAttribute("user", user);
         return "account";
+    }
+
+    @GetMapping("/search-rooms")
+    public String searchRoomsPage(Model model, Principal principal) {
+        // This is a placeholder for now. 
+        // We would add search logic here later.
+        return "search-rooms";
     }
 
     @GetMapping("/friends")
