@@ -1,5 +1,5 @@
 package com.habittracker.api.controller;
-
+ 
 import com.habittracker.api.model.*;
 import com.habittracker.api.repository.*;
 import com.habittracker.api.service.EmailService;
@@ -534,8 +534,8 @@ public class WebController {
         model.addAttribute("room", room);
         model.addAttribute("members", members);
         model.addAttribute("currentUser", user);
-        
-        return "room-detail";
+
+        return "redirect:/rooms/" + room.getRoomCode();
     }
 
     @PostMapping("/rooms/{roomCode}/join")
@@ -547,7 +547,7 @@ public class WebController {
         
         if (success) {
             redirectAttributes.addFlashAttribute("success", "You joined the room!");
-            return "redirect:/rooms/" + roomCode;
+            return "room-detail";
         } else {
             redirectAttributes.addFlashAttribute("error", "Could not join room. Room not found or you're already a member.");
             return "redirect:/rooms";

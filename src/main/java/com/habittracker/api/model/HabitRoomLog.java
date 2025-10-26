@@ -18,7 +18,7 @@ public class HabitRoomLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "habit_room_id", nullable = false)
     @JsonIgnoreProperties({"members", "logs"}) 
     private HabitRoom habitRoom;
