@@ -34,7 +34,7 @@ public class HabitRoomMember {
     
     @Column
     private LocalDateTime lastCompletedAt;
-    
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MemberStatus status = MemberStatus.ACTIVE;
