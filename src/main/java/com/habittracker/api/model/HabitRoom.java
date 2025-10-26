@@ -31,8 +31,9 @@ public class HabitRoom{
     @Column(nullable = false)
     private String dailyGoal;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "created_by", nullable = false)
+    @JsonIgnoreProperties({"habits", "password"})
     private User createdBy;
     
     @Column(nullable = false)
