@@ -535,7 +535,7 @@ public class WebController {
         model.addAttribute("members", members);
         model.addAttribute("currentUser", user);
 
-        return "redirect:/rooms/" + room.getRoomCode();
+        return "room-detail";
     }
 
     @PostMapping("/rooms/{roomCode}/join")
