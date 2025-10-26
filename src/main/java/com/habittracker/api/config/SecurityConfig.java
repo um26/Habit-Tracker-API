@@ -13,56 +13,68 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired // Inject the custom success handler needed for 2FA redirect
+    @Autowired
     private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
-    @Bean // Provide our UserDetailsService implementation
+    @Bean
     public UserDetailsService userDetailsService(){
         return new UserDetailsServiceImpl();
     }
 
-    @Bean // Provide the password encoder
+    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean // Configure the Authentication Provider to use our UserDetailsService and PasswordEncoder
+    @Bean
     public AuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService()); // Use our email-based loader
-        authenticationProvider.setPasswordEncoder(passwordEncoder()); // Use BCrypt for password checks
+        authenticationProvider.setUserDetailsService(userDetailsService());
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
         return authenticationProvider;
     }
 
-    @Bean // Configure the main security rules
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simpler form handling
+            .csrf(csrf -> csrf.disable()) // Disable CSRF for H2 console
+            .headers(headers -> headers.frameOptions(frame -> frame.disable())) // Allow frames for H2 console
             .authorizeHttpRequests(auth -> auth
-                // Define public URLs that don't require login
-                .requestMatchers("/", "/login", "/register",
-                                 "/verify-email", "/registration-success",
-                                 "/css/**", "/js/**").permitAll()
-                // All other URLs require the user to be authenticated
+                // Public URLs
+                .requestMatchers(
+                    "/",
+                    "/login",
+                    "/register",
+                    "/verify-email",
+                    "/registration-success",
+                    "/setup-2fa",
+                    "/verify-2fa",
+                    "/css/**",
+                    "/js/**",
+                    "/images/**",
+                    "/static/**",
+                    "/h2-console/**"  // H2 console allowed
+                ).permitAll()
+                // All other requests require authentication
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login") // Specify our custom login page URL
-                 // IMPORTANT: Tell Spring Security the HTML input field named 'username' contains the email
+                .loginPage("/login")
                 .usernameParameter("username")
-                // Use our custom handler to decide where to go after password check (2FA or Dashboard)
                 .successHandler(customAuthenticationSuccessHandler)
-                .permitAll() // Allow everyone to access the login page itself
+                .permitAll()
             )
             .logout(logout -> logout
-                .logoutSuccessUrl("/login?logout") // Where to go after logging out
-                .permitAll() // Allow everyone to log out
+                .logoutSuccessUrl("/login?logout")
+                .permitAll()
             );
 
         return http.build();
     }
+
 }

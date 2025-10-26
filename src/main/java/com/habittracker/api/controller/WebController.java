@@ -1,5 +1,5 @@
 package com.habittracker.api.controller;
-
+ 
 import com.habittracker.api.model.*;
 import com.habittracker.api.repository.*;
 import com.habittracker.api.service.EmailService;
@@ -21,7 +21,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.habittracker.api.service.HabitRoomService;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -46,7 +46,7 @@ public class WebController {
     @Autowired private EmailService emailService;
     @Autowired private TwoFactorAuthenticationService tfaService;
     @Autowired private TurnstileService turnstileService;
-    @Autowired private SimpMessagingTemplate messagingTemplate;
+    @Autowired private HabitRoomService habitRoomService;
 
     @Value("${app.cutover-hour:0}") private int cutoverHour;
     @Value("${cloudflare.turnstile.siteKey}") private String turnstileSiteKey;
@@ -136,25 +136,55 @@ public class WebController {
 
     @GetMapping("/verify-email")
     public String verifyEmail(@RequestParam("token") String token, RedirectAttributes redirectAttributes) {
+        log.info("Verify-email endpoint called with token: {}", token);
+        
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
 
         if (verificationToken == null) {
+            log.error("Token not found in database");
             redirectAttributes.addFlashAttribute("error", "Invalid verification token.");
             return "redirect:/login";
         }
 
         User user = verificationToken.getUser();
+        if (user == null) {
+            log.error("User is null - relationship broken");
+            redirectAttributes.addFlashAttribute("error", "User data is corrupted.");
+            return "redirect:/login";
+        }
+        
+        log.info("User found: {}, enabled before: {}", user.getEmail(), user.isEnabled());
+
         Calendar cal = Calendar.getInstance();
         if ((verificationToken.getExpiryDate().getTime() - cal.getTime().getTime()) <= 0) {
+            log.error("Token expired");
             redirectAttributes.addFlashAttribute("error", "Verification token has expired.");
             return "redirect:/login";
         }
 
-        user.setEnabled(true);
-        userRepository.save(user);
-        verificationTokenRepository.delete(verificationToken);
+        // THE KEY FIX: Fetch fresh from database, modify, and save
+        User freshUser = userRepository.findById(user.getId()).orElse(null);
+        if (freshUser == null) {
+            log.error("User not found in database by ID");
+            redirectAttributes.addFlashAttribute("error", "User not found.");
+            return "redirect:/login";
+        }
+        
+        freshUser.setEnabled(true);
+        log.info("Setting enabled=true for user {}", freshUser.getEmail());
+        
+        userRepository.save(freshUser);
+        log.info("User saved. Verifying...");
+        
+        // Verify the save actually worked
+        User verify = userRepository.findById(freshUser.getId()).orElse(null);
+        log.info("Verification: User {} is now enabled={}", verify != null ? verify.getEmail() : "null", 
+                verify != null ? verify.isEnabled() : "N/A");
 
-        log.info("Email verified successfully for user {}", user.getEmail());
+        verificationTokenRepository.delete(verificationToken);
+        log.info("Verification token deleted");
+
+        log.info("Email verified successfully for user {}", freshUser.getEmail());
         redirectAttributes.addFlashAttribute("success", "Email verified successfully! Please log in.");
         return "redirect:/login";
     }
@@ -485,4 +515,88 @@ public class WebController {
         // Redirect to the original destination, or dashboard if not specified
         return "redirect:" + (redirectTo != null ? redirectTo : "/dashboard");
     }
-} // <-- Ensure this final brace is present
+    @GetMapping("/rooms")
+    public String roomsPage(Model model, Principal principal) {
+        User user = getCurrentUser(principal);
+        if (user == null) return "redirect:/login?error";
+        
+        List<HabitRoom> myRooms = habitRoomService.getUserRooms(user);
+        model.addAttribute("rooms", myRooms);
+        model.addAttribute("newRoom", new HabitRoom());
+        
+        return "rooms";
+    }
+
+    @PostMapping("/rooms/create")
+    public String createRoom(@RequestParam String habitName,
+                            @RequestParam String description,
+                            @RequestParam String dailyGoal,
+                            Principal principal,
+                            RedirectAttributes redirectAttributes) {
+        User user = getCurrentUser(principal);
+        if (user == null) return "redirect:/login?error";
+        
+        HabitRoom room = habitRoomService.createRoom(user, habitName, description, dailyGoal);
+        
+        redirectAttributes.addFlashAttribute("success", "Room created! Share code: " + room.getRoomCode());
+        return "redirect:/rooms/" + room.getRoomCode();
+    }
+
+    @GetMapping("/rooms/{roomCode}")
+    public String roomDetail(@PathVariable String roomCode, Model model, Principal principal) {
+        User user = getCurrentUser(principal);
+        if (user == null) return "redirect:/login?error";
+        
+        HabitRoom room = habitRoomService.getRoomByCode(roomCode);
+        if (room == null) {
+            return "redirect:/rooms?error=notfound";
+        }
+        
+        List<HabitRoomMember> members = habitRoomService.getRoomMembers(room);
+        
+        model.addAttribute("room", room);
+        model.addAttribute("members", members);
+        model.addAttribute("currentUser", user);
+
+        return "room-detail";
+    }
+
+    @PostMapping("/rooms/{roomCode}/join")
+    public String joinRoom(@PathVariable String roomCode, Principal principal, RedirectAttributes redirectAttributes) {
+        User user = getCurrentUser(principal);
+        if (user == null) return "redirect:/login?error";
+        
+        boolean success = habitRoomService.joinRoom(roomCode, user);
+        
+        if (success) {
+            redirectAttributes.addFlashAttribute("success", "You joined the room!");
+            return "room-detail";
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Could not join room. Room not found or you're already a member.");
+            return "redirect:/rooms";
+        }
+    }
+
+    @PostMapping("/rooms/{roomCode}/complete")
+    public String markRoomComplete(@PathVariable String roomCode, Principal principal, RedirectAttributes redirectAttributes) {
+        User user = getCurrentUser(principal);
+        if (user == null) return "redirect:/login?error";
+        
+        boolean success = habitRoomService.markComplete(roomCode, user);
+        
+        if (success) {
+            redirectAttributes.addFlashAttribute("success", "Task marked as complete!");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Could not mark complete.");
+        }
+        
+        return "redirect:/rooms/" + roomCode;
+    }
+    @GetMapping(value = "/rooms", produces = "application/json")
+    @ResponseBody
+    public List<HabitRoom> getRoomsJson(Principal principal) {
+        User user = getCurrentUser(principal);
+        if (user == null) return List.of();
+        return habitRoomService.getUserRooms(user);
+    }
+}

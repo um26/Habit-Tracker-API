@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Habit Rooms (Live)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+  <style>
+    body { padding-top: 60px; }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 10; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
+    .room-card { padding: 1rem; border: 1px solid var(--pico-muted-border-color); border-radius: 0.5rem; margin-bottom: 1rem; }
+    .room-card:hover { background-color: var(--pico-color-grey-100); cursor: pointer; }
+    .room-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .flash { padding: 1rem; border-left: 5px solid; margin-bottom: 1rem; border-radius: 5px; }
+    .flash.success { border-color: var(--pico-color-green-500); background: var(--pico-color-green-100); color: var(--pico-color-green-700); }
+    .flash.error { border-color: var(--pico-color-red-500); background: var(--pico-color-red-100); color: var(--pico-color-red-700); }
+  </style>
+</head>
+<body>
+<nav class="container">
+  <ul>
+    <li><a href="/dashboard"><strong>← Back to Dashboard</strong></a></li>
+  </ul>
+  <ul>
+    <li><h3>Habit Rooms (Live)</h3></li>
+  </ul>
+</nav>
+
+<main class="container">
+  <div id="flash-container"></div>
+
+  <section>
+    <h2>Create a New Room</h2>
+    <form id="create-room-form">
+      <input type="text" id="habitName" placeholder="Habit Name" required>
+      <input type="text" id="description" placeholder="Description">
+      <input type="text" id="dailyGoal" placeholder="Daily Goal" required>
+      <button type="submit">Create Room</button>
+    </form>
+  </section>
+
+  <section style="margin-top: 2rem;">
+    <h2>Join a Room</h2>
+    <form id="join-room-form">
+      <input type="text" id="roomCode" placeholder="Enter Room Code" required>
+      <button type="submit" class="secondary">Join Room</button>
+    </form>
+  </section>
+
+  <section style="margin-top: 2rem;">
+    <h2>My Rooms</h2>
+    <div id="rooms-container"><p>Loading rooms...</p></div>
+  </section>
+</main>
+
+<!-- SockJS + STOMP -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const flashContainer = document.getElementById('flash-container');
+  const roomsContainer = document.getElementById('rooms-container');
+  let stompClient = null;
+  let rooms = [];
+
+  // Flash messages
+  function showFlash(message, type = 'success') {
+    flashContainer.innerHTML = `<div class="flash ${type}">${message}</div>`;
+    setTimeout(() => flashContainer.innerHTML = '', 4000);
+  }
+
+  // Connect WebSocket
+  function connectWebSocket() {
+    const socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, () => {
+      console.log('Connected to WebSocket');
+
+      // Subscribe to room updates
+      stompClient.subscribe('/topic/rooms', msg => {
+        const room = JSON.parse(msg.body);
+        addOrUpdateRoom(room);
+        showFlash(`New room created: ${room.habitName}`, 'success');
+      });
+
+      // Subscribe to room join updates
+      stompClient.subscribe('/topic/room-updates', msg => {
+        const data = JSON.parse(msg.body);
+        if (data.type === 'join') {
+          showFlash(`${data.username} joined room ${data.roomCode}`, 'info');
+        }
+      });
+
+      // Initial fetch after connect
+      fetchRooms();
+    });
+  }
+
+  // Fetch initial rooms (HTTP)
+  async function fetchRooms() {
+    try {
+      const res = await fetch('/rooms', { headers: { 'Accept': 'application/json' }});
+      rooms = await res.json();
+      renderRooms();
+    } catch {
+      roomsContainer.innerHTML = `<p style="color:red;">Could not load rooms.</p>`;
+    }
+  }
+
+  // Render rooms
+  function renderRooms() {
+    if (!rooms.length) {
+      roomsContainer.innerHTML = `<p>No rooms found. Create or join one!</p>`;
+      return;
+    }
+
+    roomsContainer.innerHTML = '';
+    rooms.forEach(room => {
+      const div = document.createElement('div');
+      div.className = 'room-card';
+      div.innerHTML = `
+        <h3>${room.habitName}</h3>
+        <p>${room.description || 'No description provided'}</p>
+        <small><strong>Goal:</strong> ${room.dailyGoal}</small><br>
+        <small><strong>Code:</strong> ${room.roomCode}</small>
+        <div class="room-actions">
+          <button class="secondary" onclick="openRoom('${room.roomCode}')">View Room</button>
+          <button class="contrast outline" onclick="markComplete('${room.roomCode}')">Mark Complete</button>
+        </div>
+      `;
+      roomsContainer.appendChild(div);
+    });
+  }
+
+  // Add or update a room in the UI
+  function addOrUpdateRoom(room) {
+    const existing = rooms.find(r => r.roomCode === room.roomCode);
+    if (!existing) {
+      rooms.push(room);
+      renderRooms();
+    }
+  }
+
+  // Create room via WebSocket - ADD /app prefix
+  document.getElementById('create-room-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const habitName = document.getElementById('habitName').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const dailyGoal = document.getElementById('dailyGoal').value.trim();
+
+    stompClient.send('/app/rooms/create', {}, JSON.stringify({ habitName, description, dailyGoal }));
+    showFlash('Creating room...', 'info');
+    
+    // Clear form
+    e.target.reset();
+  });
+
+  // Join room via WebSocket - Already correct
+  document.getElementById('join-room-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const roomCode = document.getElementById('roomCode').value.trim();
+
+    stompClient.send('/app/room/join', {}, JSON.stringify({ roomCode }));
+    showFlash('Joining room...', 'info');
+    
+    e.target.reset();
+  });
+  // View room details
+  window.openRoom = (code) => window.location.href = `/rooms/${code}`;
+
+  // Mark room complete
+  window.markComplete = async (code) => {
+    try {
+      await fetch(`/rooms/${code}/complete`, { method: 'POST' });
+      showFlash('Marked as complete!', 'success');
+    } catch {
+      showFlash('Error marking complete', 'error');
+    }
+  };
+
+  connectWebSocket();
+});
+</script>
+</body>
+</html>

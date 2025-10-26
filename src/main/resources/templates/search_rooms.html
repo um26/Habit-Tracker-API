@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Rooms</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body { padding-top: 70px; }
+        nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .icon-button { padding: 0.5rem 0.75rem; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <nav>
+            <ul>
+                <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
+            </ul>
+            <ul>
+                <li><a href="/dashboard" class="secondary outline"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
+                <li><a href="/explore" class="secondary outline"><i data-feather="search" class="icon"></i>Explore People</a></li>
+                <li><a href="/search-rooms" role="button" class="contrast outline"><i data-feather="grid" class="icon"></i>Search Rooms</a></li>
+                <li><a href="/friends" class="secondary outline"><i data-feather="users" class="icon"></i>Friends</a></li>
+                <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
+                <li>
+                    <details role="list" dir="rtl">
+                        <summary aria-haspopup="listbox" role="button" class="secondary outline icon-button">
+                            <i data-feather="bell"></i>
+                            <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
+                        </summary>
+                        <ul role="listbox">
+                            <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
+                            <li th:each="notification : ${unreadNotifications}">
+                               <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" style="display: flex; align-items: center;">
+                                   <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
+                                   <span th:text="${notification.message}"></span>
+                               </a>
+                            </li>
+                        </ul>
+                    </details>
+                </li>
+                 <li>
+                    <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
+                        <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+
+        <h1><i data-feather="grid" class="icon"></i>Search for Challenge Rooms</h1>
+        
+        <article>
+            <form id="search-form">
+                <div class="grid">
+                    <div>
+                        <label for="roomCode">Room Code</label>
+                        <input type="text" id="roomCode" name="roomCode" placeholder="Enter room code" required>
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <button type="submit" id="search-btn">Search Room</button>
+                    </div>
+                </div>
+            </form>
+            
+            <div id="searchError" role="alert" style="color: var(--pico-color-red-500); display: none;"></div>
+            
+            <div id="searchResults" class="search-results">
+                <!-- Search results will be dynamically inserted here -->
+            </div>
+        </article>
+    </main>
+
+    <!-- WebSocket dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+        feather.replace();
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchForm = document.getElementById('search-form');
+            const searchResults = document.getElementById('searchResults');
+            const searchError = document.getElementById('searchError');
+            let stompClient = null;
+
+            // Connect to WebSocket
+            function connectWebSocket() {
+                const socket = new SockJS('/ws');
+                stompClient = Stomp.over(socket);
+                
+                stompClient.connect({}, (frame) => {
+                    console.log('Connected to WebSocket:', frame);
+                    
+                    // Subscribe to search results
+                    stompClient.subscribe('/user/queue/search-results', (message) => {
+                        const response = JSON.parse(message.body);
+                        displaySearchResults(response);
+                    });
+
+                    // Subscribe to error messages
+                    stompClient.subscribe('/user/queue/errors', (message) => {
+                        const error = JSON.parse(message.body);
+                        showError(error.message);
+                    });
+                }, (error) => {
+                    console.error('WebSocket connection error:', error);
+                    showError('Failed to connect to server. Please refresh the page.');
+                });
+            }
+
+            function displaySearchResults(room) {
+                searchError.style.display = 'none';
+                if (!room) {
+                    showError('Room not found');
+                    return;
+                }
+
+                searchResults.innerHTML = `
+                    <article class="room-card">
+                        <header>
+                            <h3>${room.name}</h3>
+                            <p>${room.description}</p>
+                        </header>
+                        <div class="grid">
+                            <div>
+                                <p><strong>Participants:</strong> ${room.participantCount}</p>
+                                <p><strong>Created by:</strong> ${room.creatorName}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <a href="/challenge/${room.id}" role="button">View Details</a>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }
+
+            function showError(message) {
+                searchError.textContent = message;
+                searchError.style.display = 'block';
+                searchResults.innerHTML = '';
+            }
+
+            searchForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                
+                if (!stompClient || !stompClient.connected) {
+                    showError('Not connected to server. Please refresh the page.');
+                    return;
+                }
+
+                const roomCode = document.getElementById('roomCode').value.trim();
+                if (!roomCode) {
+                    showError('Please enter a room code');
+                    return;
+                }
+
+                // Send search request via WebSocket
+                stompClient.send('/app/rooms/search', {}, JSON.stringify({ roomCode: roomCode }));
+                searchResults.innerHTML = '<p>Searching...</p>';
+            });
+
+            // Initialize WebSocket connection
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
