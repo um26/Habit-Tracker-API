@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Challenge Details</title>
+    <div th:replace="fragments/header :: header-css"/>
+</head>
+<body>
+    <div th:replace="fragments/header :: header"/>
+    
+    <div class="container mt-4">
+        <h2 th:text="${challenge.name}">Challenge Name</h2>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Challenge Progress</h5>
+                <div id="participantsList">
+                    <!-- Participant progress will be displayed here -->
+                    <div th:each="participant : ${challenge.participants}" class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span th:text="${participant.username}">Username</span>
+                            <span class="badge bg-success" th:text="${participant.streak + ' day streak'}">0 day streak</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 th:style="'width: ' + ${participant.progress} + '%'" 
+                                 th:text="${participant.progress + '%'}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="realTimeUpdates" class="alert alert-info" style="display: none;">
+        </div>
+    </div>
+
+    <!-- WebSocket dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    
+    <script th:inline="javascript">
+        const challengeId = /*[[${challenge.id}]]*/ null;
+        
+        // Connect to WebSocket
+        const socket = new SockJS('/ws');
+        const stompClient = Stomp.over(socket);
+        
+        stompClient.connect({}, function(frame) {
+            console.log('Connected to WebSocket');
+            
+            // Subscribe to the challenge's topic
+            stompClient.subscribe('/topic/challenge/' + challengeId, function(message) {
+                const habitCompletion = JSON.parse(message.body);
+                console.log('Received message:', habitCompletion);
+                
+                // Show real-time notification
+                const updateDiv = document.getElementById('realTimeUpdates');
+                updateDiv.style.display = 'block';
+                updateDiv.innerHTML = `${habitCompletion.username} completed ${habitCompletion.habitName}! New streak: ${habitCompletion.newStreak}`;
+                
+                // Auto-hide notification after 5 seconds
+                setTimeout(() => {
+                    updateDiv.style.display = 'none';
+                }, 5000);
+                
+                // Update the participant's progress if they're in the list
+                updateParticipantProgress(habitCompletion);
+            });
+        }, function(error) {
+            console.error('WebSocket connection error:', error);
+        });
+        
+        function updateParticipantProgress(habitCompletion) {
+            const participantDiv = document.querySelector(`#participantsList div[data-user-id="${habitCompletion.userId}"]`);
+            if (participantDiv) {
+                const streakBadge = participantDiv.querySelector('.badge');
+                streakBadge.textContent = `${habitCompletion.newStreak} day streak`;
+                
+                // You might want to update the progress bar here as well
+                // This depends on how you calculate progress in your application
+            }
+        }
+    </script>
+</body>
+</html>

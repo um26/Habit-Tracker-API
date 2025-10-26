@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <nav th:fragment="nav">
+        <ul>
+            <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
+        </ul>
+        <ul>
+            <li><a href="/dashboard" th:class="${pageId == 'dashboard'} ? 'contrast outline' : 'secondary outline'"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
+            <li><a href="/explore" th:class="${pageId == 'explore'} ? 'contrast outline' : 'secondary outline'"><i data-feather="search" class="icon"></i>Explore</a></li>
+            <li><a href="/challenge/rooms" th:class="${pageId == 'challenges'} ? 'contrast outline' : 'secondary outline'"><i data-feather="award" class="icon"></i>Challenges</a></li>
+            <li><a href="/friends" th:class="${pageId == 'friends'} ? 'contrast outline' : 'secondary outline'"><i data-feather="users" class="icon"></i>Friends</a></li>
+            <li><a href="/account" th:class="${pageId == 'account'} ? 'contrast outline' : 'secondary outline'"><i data-feather="user" class="icon"></i>Account</a></li>
+            <li>
+                <a href="/notifications" th:class="${pageId == 'notifications'} ? 'contrast outline' : 'secondary outline'">
+                    <i data-feather="bell"></i>
+                    <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
+                </a>
+            </li>
+            <li>
+                <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
+                    <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</body>
+</html>

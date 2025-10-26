@@ -1,23 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Registration Successful</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-    <style>body { font-family: sans-serif; max-width: 600px; margin: 100px auto; text-align: center; }</style>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 100px auto; text-align: center; }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+    </style>
 </head>
 <body>
-    <article>
-        <h1>Registration Almost Complete!</h1>
-        <p>Thank you for registering. A verification email has been sent to your address.</p>
-        <p>Please check your inbox (and spam folder) and click the link inside to activate your account.</p>
-        <a href="/login" role="button" class="secondary">Back to Login</a>
-    </article>
+    <main class="container">
+        <article>
+            <header>
+                <h1><i data-feather="mail" class="icon"></i>Registration Almost Complete!</h1>
+            </header>
+            <p>Thank you for registering. A verification email has been sent to your address.</p>
+            <p>Please check your inbox (and spam folder) and click the link inside to activate your account.</p>
+            <footer>
+                <a href="/login" role="button" class="secondary"><i data-feather="arrow-left" class="icon"></i>Back to Login</a>
+            </footer>
+        </article>
+    </main>
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
-        feather.replace(); // Activate the icons
+      feather.replace();
     </script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <script> feather.replace(); </script>
 </body>
 </html>

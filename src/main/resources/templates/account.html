@@ -9,6 +9,10 @@
         nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
         .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
         .icon-button { padding: 0.5rem 0.75rem; }
+        /* Flash message styles */
+        .success-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
+        .info-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
+        .error-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
     </style>
 </head>
 <body>
@@ -31,11 +35,12 @@
                          <ul role="listbox">
                             <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
                             <li th:each="notification : ${unreadNotifications}">
-                               <a th:href="${notification.link}" style="display: flex; align-items: center;">
+                               <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" style="display: flex; align-items: center;">
                                    <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
                                    <span th:text="${notification.message}"></span>
                                </a>
                             </li>
+                            <li th:if="${!#lists.isEmpty(unreadNotifications)}"><hr><a href="/notifications">View All</a></li>
                          </ul>
                     </details>
                 </li>
@@ -48,6 +53,13 @@
         </nav>
 
         <h1><i data-feather="user" class="icon"></i>My Account</h1>
+
+        <div style="margin-top: 1rem;">
+             <div th:if="${success}" role="alert" class="success-flash" th:text="${success}"></div>
+             <div th:if="${info}" role="alert" class="info-flash" th:text="${info}"></div>
+             <div th:if="${error}" role="alert" class="error-flash" th:text="${error}"></div>
+         </div>
+         
         <article>
              <p><strong><i data-feather="mail" class="icon"></i>Email:</strong> <span th:text="${user.email}"></span></p>
             <p><strong><i data-feather="at-sign" class="icon"></i>Username:</strong> <span th:text="${user.username}"></span></p>
@@ -56,7 +68,7 @@
             <footer>
                 <p th:if="${user.twoFactorEnabled}">
                     <i data-feather="shield-check" class="icon"></i>Two-Factor Authentication is <strong>enabled</strong>.
-                    </p>
+                </p>
                 <p th:unless="${user.twoFactorEnabled}">
                     <i data-feather="shield-off" class="icon"></i>Two-Factor Authentication is <strong>disabled</strong>.
                     <a href="/setup-2fa" role="button" class="contrast outline">Enable 2FA Now</a>

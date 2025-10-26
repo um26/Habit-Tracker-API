@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Two-Factor Authentication</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body { max-width: 500px; margin: 100px auto; }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .error-flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <h1><i data-feather="lock" class="icon"></i>Check your Authenticator</h1>
+        <p>Please enter the 6-digit code from your authenticator app.</p>
+
+        <div th:if="${error}" role="alert" class="error-flash" th:text="${error}"></div>
+        <div th:if="${param.error}" role="alert" class="error-flash">Invalid verification code.</div>
+
+        <form th:action="@{/verify-2fa}" method="post">
+            <label for="code">Verification Code:</label>
+            <input type="text" id="code" name="code" required pattern="\d{6}" title="Enter the 6-digit code" autofocus>
+            <button type: "submit"><i data-feather="key" class="icon"></i>Verify</button>
+        </form>
+         <form th:action="@{/logout}" method="post" style="margin-top: 20px;">
+            <button type="submit" class="secondary outline"><i data-feather="x" class="icon"></i>Cancel Login</button>
+        </form>
+    </main>
+     <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+      feather.replace();
+    </script>
+</body>
+</html>
