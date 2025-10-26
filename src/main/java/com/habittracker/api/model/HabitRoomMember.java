@@ -16,12 +16,12 @@ public class HabitRoomMember {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "habit_room_id", nullable = false)
     @JsonIgnoreProperties({"members", "logs"})
     private HabitRoom habitRoom;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({"habits", "password"}) 
     private User user;
