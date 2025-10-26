@@ -8,39 +8,46 @@
         body { font-family: sans-serif; max-width: 500px; margin: 50px auto; }
         form { display: flex; flex-direction: column; gap: 10px; }
         input { padding: 8px; }
-        button { padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer; }
-        .error { color: #d83a52; }
-        a { color: #007bff; }
+        button { padding: 10px; color: white; border: none; cursor: pointer; }
+        .error { color: var(--pico-color-red-500); }
+        a { color: var(--pico-primary); }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
     </style>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
-    <h1>Login</h1>
+    <main class="container">
+        <h1><i data-feather="log-in" class="icon"></i>Login</h1>
 
-    <div th:if="${success}" style="color: #28a745; margin-bottom: 10px;" th:text="${success}"></div>
-    <div th:if="${param.error}" class="error" style="margin-bottom: 10px;">
-        Invalid email or password.
-    </div>
-    <div th:if="${param.logout}" style="color: #17a2b8; margin-bottom: 10px;">
-        You have been logged out successfully.
-    </div>
-
-    <form th:action="@{/login}" method="post">
-        <div>
-            <label for="username">Email:</label>
-            <input type="email" id="username" name="username" required>
+        <div th:if="${success}" role="status" style="padding: 0.5rem; border-radius: 6px; margin-bottom: 1rem; background: var(--pico-color-green-100); color: var(--pico-color-green-700); border-left: 5px solid var(--pico-color-green-500);" th:text="${success}"></div>
+        <div th:if="${param.error}" class="error" style="margin-bottom: 10px;">
+            Invalid email or password.
         </div>
-        <div>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
+        <div th:if="${param.logout}" style="color: #17a2b8; margin-bottom: 10px;">
+            You have been logged out successfully.
         </div>
 
-        <div class="cf-turnstile" th:attr="data-sitekey=${turnstileSiteKey}"></div>
+        <form th:action="@{/login}" method="post">
+            <div>
+                <label for="username">Email:</label>
+                <input type="email" id="username" name="username" required>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
 
-        <div>
-            <button type="submit">Log In</button>
-        </div>
-    </form>
-    <p>Don't have an account? <a href="/register">Register here</a>.</p>
+            <div class="cf-turnstile" th:attr="data-sitekey=${turnstileSiteKey}"></div>
+
+            <div>
+                <button type="submit" style="background-color: var(--pico-color-green-500);"><i data-feather="check" class="icon"></i>Log In</button>
+            </div>
+        </form>
+        <p>Don't have an account? <a href="/register">Register here</a>.</p>
+    </main>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+      feather.replace();
+    </script>
 </body>
 </html>

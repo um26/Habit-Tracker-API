@@ -5,16 +5,27 @@
     <title>Habit Tracker</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 100px; }
-        nav a { margin: 0 15px; text-decoration: none; font-size: 1.2em; color: #007bff; }
+        body { font-family: sans-serif; text-align: center; margin-top: 100px; padding: 2rem; }
+        nav a { margin: 0 15px; text-decoration: none; font-size: 1.2em; }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
     </style>
 </head>
 <body>
-    <h1>Welcome to Your Habit Tracker!</h1>
-    <p>Your journey to building better habits starts here.</p>
-    <nav>
-        <a href="/login">Login</a>
-        <a href="/register">Register</a>
-    </nav>
+    <main class="container">
+        <article>
+            <h1><i data-feather="check-circle" class="icon"></i>Welcome to Your Habit Tracker!</h1>
+            <p>Your journey to building better habits starts here.</p>
+            <footer>
+                <nav>
+                    <a href="/login" role="button" class="contrast"><i data-feather="log-in" class="icon"></i>Login</a>
+                    <a href="/register" role="button"><i data-feather="user-plus" class="icon"></i>Register</a>
+                </nav>
+            </footer>
+        </article>
+    </main>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+      feather.replace(); // Activate the icons
+    </script>
 </body>
 </html>
