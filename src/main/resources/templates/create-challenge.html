@@ -14,7 +14,39 @@
 <body>
 <main class="container">
     <nav>
-        </nav>
+        <ul>
+            <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
+        </ul>
+        <ul>
+            <li><a href="/dashboard" role="button" class="contrast outline"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
+            <li><a href="/explore" class="secondary outline"><i data-feather="search" class="icon"></i>Explore People</a></li>
+            <li><a href="/search-rooms" class="secondary outline"><i data-feather="grid" class="icon"></i>Search Rooms</a></li>
+            <li><a href="/friends" class="secondary outline"><i data-feather="users" class="icon"></i>Friends</a></li>
+            <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
+            <li>
+                <details role="list" dir="rtl">
+                    <summary aria-haspopup="listbox" role="button" class="secondary outline icon-button">
+                        <i data-feather="bell"></i>
+                        <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
+                    </summary>
+                    <ul role="listbox">
+                        <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
+                        <li th:each="notification : ${unreadNotifications}">
+                           <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" style="display: flex; align-items: center;">
+                               <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
+                               <span th:text="${notification.message}"></span>
+                           </a>
+                        </li>
+                    </ul>
+                </details>
+            </li>
+             <li>
+                <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
+                    <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
+                </form>
+            </li>
+        </ul>
+    </nav>
 
     <h1><i data-feather="shield" class="icon"></i>Create a New Challenge</h1>
     <p>Create a collaborative room to track a habit with your friends.</p>
@@ -61,12 +93,26 @@
         function connect() {
             const socket = new SockJS('/ws'); // Connect to our backend WebSocket endpoint
             stompClient = Stomp.over(socket);
+            stompClient.debug = null; // Turn off noisy console logging
 
             stompClient.connect({}, (frame) => {
                 console.log('Connected: ' + frame);
                 statusElement.textContent = 'Connected to server. Ready to create room.';
                 statusElement.style.color = 'var(--pico-color-green-500)';
                 createButton.disabled = false; // Enable button on connect
+                
+                // Subscribe to the reply queue
+                stompClient.subscribe('/user/queue/reply', (message) => {
+                     const response = JSON.parse(message.body);
+                     if(response.success) {
+                        alert('Challenge created successfully! Redirecting...');
+                        // Redirect to the new room page
+                        window.location.href = `/challenge/${response.roomId}`;
+                     } else {
+                        alert('Failed to create challenge: ' + response.error);
+                     }
+                });
+                
             }, (error) => {
                 console.error('Connection error: ' + error);
                 statusElement.textContent = 'Connection error. Please refresh.';
@@ -75,48 +121,27 @@
         }
 
         form.addEventListener('submit', (event) => {
-            event.preventDefault(); // Stop the form from submitting normally
+            event.preventDefault(); 
             
             if (!stompClient || !stompClient.connected) {
                 alert('Not connected to the server. Please wait.');
                 return;
             }
 
-            // Get data from the form
             const challengeName = document.getElementById('challenge-name').value;
             const description = document.getElementById('challenge-desc').value;
             const habitId = document.getElementById('habitId').value;
             
-            // This is the data your friend asked for
-            // We map our form fields to their requested names
             const payload = {
                 habitId: habitId,
-                habitDescription: description, // Mapped from "challenge-desc"
-                dailyGoals: challengeName,     // Mapped from "challenge-name"
-                // "Created at" and "User" are typically set by the backend, not sent from the client
+                habitDescription: description,
+                dailyGoals: challengeName, 
             };
 
-            // Send the data over the WebSocket
-            // The friend's backend MUST be listening on "/app/challenge/create"
             stompClient.send('/app/challenge/create', {}, JSON.stringify(payload));
-            
             statusElement.textContent = `Sent create request for '${challengeName}'! Waiting for response...`;
-            
-            // We can also subscribe to a response topic
-            // This is just an example, the friend's backend needs to send to this topic
-            stompClient.subscribe('/user/queue/reply', (message) => {
-                 const response = JSON.parse(message.body);
-                 if(response.success) {
-                    alert('Challenge created successfully! Redirecting...');
-                    // Redirect to the new room page (assuming backend sends back the new room ID)
-                    // window.location.href = `/challenge/${response.roomId}`;
-                 } else {
-                    alert('Failed to create challenge: ' + response.error);
-                 }
-            });
         });
 
-        // Initial connection
         if(!createButton.disabled) {
            connect();
         }

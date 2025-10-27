@@ -11,8 +11,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
-import java.util.Map;        // ADD THIS
-import java.util.HashMap;    // ADD THIS
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Optional; // <-- ADD THIS
+import java.util.stream.Collectors; // <-- ADD THIS
 
 @Service
 public class HabitRoomService {
@@ -28,6 +30,9 @@ public class HabitRoomService {
     
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+    
+    @Autowired // <-- ADD THIS
+    private NotificationService notificationService; // <-- ADD THIS
 
     @Transactional
     public HabitRoom createRoom(User creator, String habitName, String description, String dailyGoal) {
@@ -80,8 +85,11 @@ public class HabitRoomService {
         
         // Notify all room members via WebSocket
         messagingTemplate.convertAndSend("/topic/room/" + roomCode, 
-            new RoomUpdateMessage("USER_JOINED", user.getUsername() + " joined the room!"));
+            new RoomUpdateMessage("USER_JOINED", user.getUsername() + " joined the room!")); // <-- This needs RoomUpdateMessage.java
         
+        // Notify creator
+        notificationService.createNotification(room.getCreatedBy(), user.getUsername() + " joined your room: " + room.getHabitName(), "/rooms/" + room.getRoomCode());
+
         return true;
     }
 
@@ -104,7 +112,7 @@ public class HabitRoomService {
         Map<String, Object> userCompletedPayload = new HashMap<>();
         userCompletedPayload.put("type", "USER_COMPLETED");
         userCompletedPayload.put("roomCode", roomCode);
-        userCompletedPayload.put("userId", user.getId()); // <-- CRITICAL for frontend update
+        userCompletedPayload.put("userId", user.getId());
         userCompletedPayload.put("username", user.getUsername());
         userCompletedPayload.put("message", user.getUsername() + " completed their task!");
         messagingTemplate.convertAndSend("/topic/room/" + roomCode, userCompletedPayload);
@@ -121,8 +129,8 @@ public class HabitRoomService {
             Map<String, Object> roomCompletedPayload = new HashMap<>();
             roomCompletedPayload.put("type", "ROOM_COMPLETED");
             roomCompletedPayload.put("roomCode", roomCode);
-            roomCompletedPayload.put("currentStreak", room.getCurrentStreak() + 1); // +1 because room.getCurrentStreak() is the OLD value before save
-            roomCompletedPayload.put("message", "All members completed! Streak: " + (room.getCurrentStreak() + 1));
+            roomCompletedPayload.put("currentStreak", room.getCurrentStreak()); // Use the updated value
+            roomCompletedPayload.put("message", "All members completed! Streak: " + room.getCurrentStreak());
             messagingTemplate.convertAndSend("/topic/room/" + roomCode, roomCompletedPayload);
         }
         
@@ -133,25 +141,20 @@ public class HabitRoomService {
     private void completeRoomForDay(HabitRoom room) {
         LocalDate today = LocalDate.now();
         
-        // Check if already logged today
         if (habitRoomLogRepository.existsByHabitRoomAndCompletionDate(room, today)) {
             return;
         }
         
-        // Get last log to determine streak
         HabitRoomLog lastLog = habitRoomLogRepository.findTopByHabitRoomOrderByCompletionDateDesc(room).orElse(null);
         
         int newStreak = 1;
         if (lastLog != null && lastLog.getCompletionDate().equals(today.minusDays(1))) {
-            // Streak continues
             newStreak = lastLog.getStreakCount() + 1;
         }
         
-        // Update room streak
         room.setCurrentStreak(newStreak);
         habitRoomRepository.save(room);
         
-        // Create log
         HabitRoomLog log = new HabitRoomLog();
         log.setHabitRoom(room);
         log.setCompletionDate(today);
@@ -159,7 +162,6 @@ public class HabitRoomService {
         log.setStreakCount(newStreak);
         log.setAllMembersCompleted(true);
         
-        // Get all active member IDs
         List<Long> memberIds = habitRoomMemberRepository.findActiveMembers(room)
             .stream()
             .map(m -> m.getUser().getId())
@@ -168,7 +170,7 @@ public class HabitRoomService {
         
         habitRoomLogRepository.save(log);
         
-        // Reset daily completion flags for next day
+        // Reset daily completion flags for this room
         habitRoomMemberRepository.resetDailyCompletionForRoom(room.getId());
     }
 
@@ -182,6 +184,10 @@ public class HabitRoomService {
 
     public List<HabitRoomMember> getRoomMembers(HabitRoom room) {
         return habitRoomMemberRepository.findActiveMembers(room);
+    }
+    
+    public boolean isMember(HabitRoom room, User user) {
+        return habitRoomMemberRepository.existsByHabitRoomAndUser(room, user);
     }
 
     private String generateUniqueRoomCode() {

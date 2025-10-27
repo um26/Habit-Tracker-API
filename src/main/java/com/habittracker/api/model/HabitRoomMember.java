@@ -1,13 +1,11 @@
 package com.habittracker.api.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "habit_room_members")
 public class HabitRoomMember {
@@ -44,4 +42,20 @@ public class HabitRoomMember {
         LEFT,
         KICKED
     }
+    
+    // --- MANUAL GETTERS AND SETTERS ---
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public HabitRoom getHabitRoom() { return habitRoom; }
+    public void setHabitRoom(HabitRoom habitRoom) { this.habitRoom = habitRoom; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public boolean isHasCompletedToday() { return hasCompletedToday; }
+    public void setHasCompletedToday(boolean hasCompletedToday) { this.hasCompletedToday = hasCompletedToday; }
+    public LocalDateTime getJoinedAt() { return joinedAt; }
+    public void setJoinedAt(LocalDateTime joinedAt) { this.joinedAt = joinedAt; }
+    public LocalDateTime getLastCompletedAt() { return lastCompletedAt; }
+    public void setLastCompletedAt(LocalDateTime lastCompletedAt) { this.lastCompletedAt = lastCompletedAt; }
+    public MemberStatus getStatus() { return status; }
+    public void setStatus(MemberStatus status) { this.status = status; }
 }

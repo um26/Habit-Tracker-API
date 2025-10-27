@@ -1,21 +1,14 @@
 package com.habittracker.api.model;
 
 import jakarta.persistence.*;
-import lombok.Getter; // <-- Ensure imported
-import lombok.NoArgsConstructor;
-import lombok.Setter; // <-- Ensure imported
-
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 
-@Getter // <-- Add annotation
-@Setter // <-- Add annotation
-@NoArgsConstructor
 @Entity
 public class VerificationToken {
 
-    private static final int EXPIRATION = 60 * 24; // 24 hours
+    private static final int EXPIRATION = 60 * 24;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,6 +22,8 @@ public class VerificationToken {
 
     private Date expiryDate;
 
+    public VerificationToken() {} // Default constructor
+
     public VerificationToken(String token, User user) {
         this.token = token;
         this.user = user;
@@ -41,4 +36,14 @@ public class VerificationToken {
         cal.add(Calendar.MINUTE, expiryTimeInMinutes);
         return new Date(cal.getTime().getTime());
     }
+    
+    // --- MANUAL GETTERS AND SETTERS ---
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public Date getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(Date expiryDate) { this.expiryDate = expiryDate; }
 }

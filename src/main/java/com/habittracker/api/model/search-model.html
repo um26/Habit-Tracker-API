@@ -37,7 +37,8 @@
                                    <span th:text="${notification.message}"></span>
                                </a>
                             </li>
-                        </ul>
+                            <li th:if="${!#lists.isEmpty(unreadNotifications)}"><hr><a href="/notifications">View All</a></li>
+                         </ul>
                     </details>
                 </li>
                  <li>
@@ -48,10 +49,10 @@
             </ul>
         </nav>
 
-        <h1><i data-feather="grid" class="icon"></i>Search for Challenge Rooms</h1>
+        <h1><i data-feather="grid" class="icon"></i>Search Challenge Rooms</h1>
         <article>
-            <p>This feature is coming soon! You will be able to search for public challenges here.</p>
-            </article>
+            <p>This feature is coming soon! You will be able to search for and join public challenge rooms here.</p>
+        </article>
     </main>
     <script src="https://unpkg.com/feather-icons"></script>
     <script> feather.replace(); </script>

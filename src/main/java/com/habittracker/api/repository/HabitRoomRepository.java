@@ -22,7 +22,7 @@ public interface HabitRoomRepository extends JpaRepository<HabitRoom, Long> {
     
     boolean existsByRoomCode(String roomCode);
     
-    @Query("SELECT hr FROM HabitRoom hr JOIN hr.members m WHERE m.user = :user AND m.status = 'ACTIVE' AND hr.isActive = true")
+    @Query("SELECT m.habitRoom FROM HabitRoomMember m WHERE m.user = :user AND m.status = 'ACTIVE' AND m.habitRoom.isActive = true")
     List<HabitRoom> findActiveRoomsByUser(@Param("user") User user);
     
     @Query("SELECT COUNT(m) FROM HabitRoomMember m WHERE m.habitRoom.id = :roomId AND m.status = 'ACTIVE'")

@@ -1,87 +1,144 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Challenge Details</title>
-    <div th:replace="fragments/header :: header-css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body { padding-top: 70px; }
+        nav { position: fixed; top: 0; left: 0; right: 0; padding: 0 1rem; z-index: 1000; background: var(--card-background-color); border-bottom: 1px solid var(--card-border-color); }
+        .icon { vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; }
+        .icon-button { padding: 0.5rem 0.75rem; }
+        .member-list { list-style: none; padding: 0; }
+        .member-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--pico-form-element-border-color); border-radius: var(--pico-border-radius); margin-bottom: 0.5rem; }
+        .flash { padding: 1rem; margin-bottom: 1rem; border-left: 5px solid; border-radius: 4px; }
+        .success-flash { border-color: var(--pico-color-green-500); background-color: var(--pico-color-green-100); color: var(--pico-color-green-700); }
+        .info-flash { border-color: var(--pico-color-blue-500); background-color: var(--pico-color-blue-100); color: var(--pico-color-blue-700); }
+        .error-flash { border-color: var(--pico-color-red-500); background-color: var(--pico-color-red-100); color: var(--pico-color-red-700); }
+    </style>
 </head>
 <body>
-    <div th:replace="fragments/header :: header"/>
-    
-    <div class="container mt-4">
-        <h2 th:text="${challenge.name}">Challenge Name</h2>
-        
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Challenge Progress</h5>
-                <div id="participantsList">
-                    <!-- Participant progress will be displayed here -->
-                    <div th:each="participant : ${challenge.participants}" class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span th:text="${participant.username}">Username</span>
-                            <span class="badge bg-success" th:text="${participant.streak + ' day streak'}">0 day streak</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" 
-                                 th:style="'width: ' + ${participant.progress} + '%'" 
-                                 th:text="${participant.progress + '%'}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<main class="container">
+    <nav>
+        <ul>
+            <li><a href="/dashboard"><i data-feather="home" class="icon"></i><strong>Habit Tracker</strong></a></li>
+        </ul>
+        <ul>
+            <li><a href="/dashboard" class="secondary outline"><i data-feather="check-square" class="icon"></i>Dashboard</a></li>
+            <li><a href="/explore" class="secondary outline"><i data-feather="search" class="icon"></i>Explore People</a></li>
+            <li><a href="/search-rooms" class="secondary outline"><i data-feather="grid" class="icon"></i>Search Rooms</a></li>
+            <li><a href="/friends" class="secondary outline"><i data-feather="users" class="icon"></i>Friends</a></li>
+            <li><a href="/account" class="secondary outline"><i data-feather="user" class="icon"></i>Account</a></li>
+            <li>
+                <details role="list" dir="rtl">
+                    <summary aria-haspopup="listbox" role="button" class="secondary outline icon-button">
+                        <i data-feather="bell"></i>
+                        <span th:if="${!#lists.isEmpty(unreadNotifications)}" th:text="'(' + ${#lists.size(unreadNotifications)} + ')'" style="margin-left: -5px; color: var(--pico-primary);"></span>
+                    </summary>
+                    <ul role="listbox">
+                        <li th:if="${#lists.isEmpty(unreadNotifications)}"><a><i>No new notifications</i></a></li>
+                        <li th:each="notification : ${unreadNotifications}">
+                           <a th:href="@{/notifications/{id}/read(id=${notification.id}, redirectTo=${notification.link})}" style="display: flex; align-items: center;">
+                               <i data-feather="message-square" style="width: 1em; height: 1em; margin-right: 0.5em;"></i>
+                               <span th:text="${notification.message}"></span>
+                           </a>
+                        </li>
+                    </ul>
+                </details>
+            </li>
+             <li>
+                <form th:action="@{/logout}" method="post" style="margin-bottom: 0;">
+                    <button type="submit" class="secondary outline icon-button" title="Logout"><i data-feather="log-out"></i></button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+
+    <div style="margin-top: 1rem;">
+         <div th:if="${success}" role="alert" class="flash success-flash" th:text="${success}"></div>
+         <div th:if="${info}" role="alert" class="flash info-flash" th:text="${info}"></div>
+         <div th:if="${error}" role="alert" class="flash error-flash" th:text="${error}"></div>
+     </div>
+
+    <h1 th:text="${challenge.habitName}">Challenge Name</h1>
+    <p>Tracking: <strong th:text="${challenge.dailyGoal}"></strong> | Created by: <strong th:text="${challenge.createdBy.username}"></strong></p>
+    <p th:text="${challenge.description}">Challenge Description</p>
+    <p><strong>Share Code:</strong> <code th:text="${challenge.roomCode}"></code></p>
+
+    <div id="realTimeUpdates" class="info-flash" style="display: none; margin-top: 1rem;"></div>
+
+    <div class="grid">
+        <article>
+            <h2><i data-feather="users" class="icon"></i>Members (<span th:text="${#lists.size(members)}"></span>)</h2>
+            <ul class.member-list">
+                <li th:each="member : ${members}" th:id="'friend-' + ${member.user.id}" class="member-item">
+                    <span th:text="${member.user.username}"></span>
+                    <span th:text="${member.hasCompletedToday} ? '✅ Done' : '⏳ Pending'"></span>
+                </li>
+            </ul>
+        </article>
+
+        <article th:if="${isCreator}">
+            <h2><i data-feather="send" class="icon"></i>Invite Friends</h2>
+            <div th:if="${#lists.isEmpty(friends)}">
+                <p>You have no friends to invite (or they are all in this challenge)!</p>
             </div>
-        </div>
-        
-        <div id="realTimeUpdates" class="alert alert-info" style="display: none;">
-        </div>
+            <form th:action="@{/challenge/{roomCode}/invite(roomCode=${challenge.roomCode})}" method="post" th:unless="${#lists.isEmpty(friends)}">
+                <label for="friendId">Select a friend to invite:</label>
+                <select id="friendId" name="friendId" required>
+                    <option th:each="friend : ${friends}" th:value="${friend.uniqueUserId}" th:text="${friend.username}"></option>
+                </select>
+                <button type="submit">Send Invite</button>
+            </form>
+        </article>
     </div>
 
-    <!-- WebSocket dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script src="https://unpkg.com/feather-icons"></script>
+<script> feather.replace(); </script>
+
+<script th:inline="javascript">
+    /* Get the room code from Thymeleaf */
+    const roomCode = /*[[${challenge.roomCode}]]*/ null;
     
-    <script th:inline="javascript">
-        const challengeId = /*[[${challenge.id}]]*/ null;
+    document.addEventListener('DOMContentLoaded', () => {
+        const updateDiv = document.getElementById('realTimeUpdates');
         
-        // Connect to WebSocket
         const socket = new SockJS('/ws');
         const stompClient = Stomp.over(socket);
+        stompClient.debug = null; // Turn off console spam
         
-        stompClient.connect({}, function(frame) {
-            console.log('Connected to WebSocket');
+        stompClient.connect({}, (frame) => {
+            console.log('Connected to WebSocket: ' + frame);
             
-            // Subscribe to the challenge's topic
-            stompClient.subscribe('/topic/challenge/' + challengeId, function(message) {
-                const habitCompletion = JSON.parse(message.body);
-                console.log('Received message:', habitCompletion);
+            // Subscribe to this challenge's specific topic
+            stompClient.subscribe('/topic/room/' + roomCode, (message) => {
+                const update = JSON.parse(message.body);
+                console.log('Received message:', update);
                 
                 // Show real-time notification
-                const updateDiv = document.getElementById('realTimeUpdates');
                 updateDiv.style.display = 'block';
-                updateDiv.innerHTML = `${habitCompletion.username} completed ${habitCompletion.habitName}! New streak: ${habitCompletion.newStreak}`;
+                updateDiv.innerHTML = `<i data-feather="zap" class="icon"></i> ${update.message}`;
+                feather.replace(); // Re-render icons
                 
                 // Auto-hide notification after 5 seconds
-                setTimeout(() => {
-                    updateDiv.style.display = 'none';
-                }, 5000);
+                setTimeout(() => { updateDiv.style.display = 'none'; }, 5000);
                 
-                // Update the participant's progress if they're in the list
-                updateParticipantProgress(habitCompletion);
+                // Update participant status if it's a completion message
+                if (update.type === 'USER_COMPLETED') {
+                    const participantElement = document.getElementById(`friend-${update.userId}`);
+                    if (participantElement) {
+                        participantElement.querySelector('span:last-child').textContent = '✅ Done';
+                    }
+                }
+                // You can add more logic here for USER_JOINED, etc.
             });
-        }, function(error) {
+        }, (error) => {
             console.error('WebSocket connection error:', error);
         });
-        
-        function updateParticipantProgress(habitCompletion) {
-            const participantDiv = document.querySelector(`#participantsList div[data-user-id="${habitCompletion.userId}"]`);
-            if (participantDiv) {
-                const streakBadge = participantDiv.querySelector('.badge');
-                streakBadge.textContent = `${habitCompletion.newStreak} day streak`;
-                
-                // You might want to update the progress bar here as well
-                // This depends on how you calculate progress in your application
-            }
-        }
-    </script>
+    });
+</script>
 </body>
 </html>

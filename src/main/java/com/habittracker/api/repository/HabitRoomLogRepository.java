@@ -1,4 +1,3 @@
-// 3. HabitRoomLogRepository.java
 package com.habittracker.api.repository;
 
 import com.habittracker.api.model.HabitRoom;
@@ -33,6 +32,6 @@ public interface HabitRoomLogRepository extends JpaRepository<HabitRoomLog, Long
     
     @Query("SELECT l FROM HabitRoomLog l WHERE l.habitRoom.id = :roomId AND l.completionDate BETWEEN :startDate AND :endDate ORDER BY l.completionDate")
     List<HabitRoomLog> findLogsBetweenDates(@Param("roomId") Long roomId, 
-                                             @Param("startDate") LocalDate startDate, 
-                                             @Param("endDate") LocalDate endDate);
+                                            @Param("startDate") LocalDate startDate, 
+                                            @Param("endDate") LocalDate endDate);
 }

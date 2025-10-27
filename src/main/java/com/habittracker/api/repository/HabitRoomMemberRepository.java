@@ -1,4 +1,3 @@
-// 2. HabitRoomMemberRepository.java
 package com.habittracker.api.repository;
 
 import com.habittracker.api.model.HabitRoom;
@@ -22,7 +21,7 @@ public interface HabitRoomMemberRepository extends JpaRepository<HabitRoomMember
     
     List<HabitRoomMember> findByUserAndStatus(User user, HabitRoomMember.MemberStatus status);
     
-    boolean existsByHabitRoomAndUser(HabitRoom habitRoom, User user);
+    boolean existsByHabitRoomAndUser(HabitRoom habitRoom, User user); // <-- Fixed typo
     
     @Query("SELECT m FROM HabitRoomMember m WHERE m.habitRoom = :room AND m.status = 'ACTIVE'")
     List<HabitRoomMember> findActiveMembers(@Param("room") HabitRoom room);
@@ -38,6 +37,6 @@ public interface HabitRoomMemberRepository extends JpaRepository<HabitRoomMember
     void resetDailyCompletionForRoom(@Param("roomId") Long roomId);
     
     @Modifying
-    @Query("UPDATE HabitRoomMember m SET m.hasCompletedToday = false WHERE m.habitRoom.isActive = true")
+    @Query("UPDATE HabitRoomMember m SET m.hasCompletedToday = false")
     void resetAllDailyCompletions();
 }
